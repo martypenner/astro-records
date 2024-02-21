@@ -1,0 +1,44 @@
+---
+import crypto from "node:crypto";
+import Layout from "../layouts/Layout.astro";
+// import { podcastApiClient } from "../utils/podcast-api-client";
+
+// console.log(await podcastApiClient.podcastsTrending());
+
+const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
+const apiSecret = import.meta.env.PUBLIC_PODCAST_INDEX_API_SECRET;
+
+const apiHeaderTime = Math.floor(Date.now() / 1000);
+const algo = "sha1";
+const hash = crypto.createHash(algo);
+const data4Hash = apiKey + apiSecret + apiHeaderTime;
+
+hash.update(data4Hash);
+
+const hash4Header = hash.digest("hex");
+console.log(`hash4Header=[${hash4Header}]`);
+
+const options = {
+  method: "get",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Auth-Date": apiHeaderTime.toString(),
+    "X-Auth-Key": apiKey,
+    Authorization: hash4Header,
+    "User-Agent": "CloudflarePodcaster/0.1",
+  },
+};
+
+const query = "bastiat";
+const url = `https://api.podcastindex.org/api/1.0/search/byterm?q=${query}`;
+
+fetch(url, options)
+  .then((res) => res.json())
+  .then((json) => {
+    console.log(json);
+  });
+---
+
+<Layout title="Welcome to podcaster.">
+  <main class="prose lg:prose-xl">hi</main>
+</Layout>
