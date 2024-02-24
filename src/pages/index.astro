@@ -1,12 +1,17 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { searchByTerm } from "../services/podcast-api";
+import { App } from "../components/App.tsx";
+import { trending, searchByTerm } from "../services/podcast-api";
 
-const feeds = await searchByTerm("backend banter");
+const feeds = await trending();
+// const feeds = await searchByTerm("computer programming");
+console.log(feeds);
 ---
 
 <Layout title="Welcome to podcaster.">
   <main class="prose lg:prose-xl">
+    <App client:only />
+
     <ul>
       {
         feeds.map((feed) => (

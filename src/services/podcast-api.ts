@@ -3,7 +3,7 @@ import pRetry from "p-retry";
 
 const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
 const apiSecret = import.meta.env.PUBLIC_PODCAST_INDEX_API_SECRET;
-const baseUrl = "https://api.podcastindex.org/api/1.0";
+const baseUrl = new URL("https://api.podcastindex.org/api/1.0");
 
 const apiHeaderTime = Math.floor(Date.now() / 1000);
 const algo = "sha1";
@@ -24,6 +24,7 @@ const options = {
     "User-Agent": "CloudflarePodcaster/0.1",
   },
 };
+
 const retryable =
   <T, U>(fn: (...args: U[]) => Promise<T>) =>
   (...args: U[]) =>
@@ -39,7 +40,11 @@ type Feed = {
 
 export const searchByTerm = retryable(
   async (query: string): Promise<Feed[]> => {
-    const url = `${baseUrl}/search/byterm?q=${query}`;
+    const url = new URL(baseUrl);
+    url.pathname = baseUrl.pathname.concat("/search/byterm");
+    const params = url.searchParams;
+    params.set("q", query);
+    url.search = params.toString();
     const response = await fetch(url, options).then((res) => res.json());
     if (response.status !== "true") {
       throw new Error(response.description);
@@ -48,3 +53,13 @@ export const searchByTerm = retryable(
     return response.feeds as Feed[];
   },
 );
+
+export const trending = retryable(async (): Promise<Feed[]> => {
+  const url = `${baseUrl}/podcasts/trending`;
+  const response = await fetch(url, options).then((res) => res.json());
+  if (response.status !== "true") {
+    throw new Error(response.description);
+  }
+
+  return response.feeds as Feed[];
+});
