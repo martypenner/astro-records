@@ -28,7 +28,15 @@ const options = {
 const retryable =
   <T, U>(fn: (...args: U[]) => Promise<T>) =>
   (...args: U[]) =>
-    pRetry(async () => await fn(...args), { retries: 5 });
+    pRetry(async () => await fn(...args), {
+      onFailedAttempt: (error) => {
+        console.log(
+          `Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
+        );
+      },
+      retries: 3,
+      randomize: true,
+    });
 
 type Feed = {
   podcastGuid: string;
