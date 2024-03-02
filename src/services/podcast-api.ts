@@ -49,6 +49,7 @@ const retryable =
     });
 
 type Feed = {
+  id: string;
   podcastGuid: string;
   title: string;
   description: string;

@@ -1,8 +1,9 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly PUBLIC_PODCAST_INDEX_API_KEY: string;
-  readonly PUBLIC_PODCAST_INDEX_API_SECRET: string;
+  readonly VITE_PODCAST_INDEX_API_KEY: string;
+  readonly VITE_PODCAST_INDEX_API_SECRET: string;
+  readonly PARTYKIT_HOST: string;
 }
 
 interface ImportMeta {
