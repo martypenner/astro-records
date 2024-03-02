@@ -1,40 +1,41 @@
 {
   "name": "my-podcaster",
-  "type": "module",
+  "private": true,
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro check && astro build",
-    "preview": "astro preview",
-    "astro": "astro",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
     "prepare": "husky"
   },
   "dependencies": {
-    "@astrojs/check": "^0.5.5",
-    "@astrojs/cloudflare": "^9.0.1",
-    "@astrojs/mdx": "^2.1.1",
-    "@astrojs/react": "^3.0.10",
-    "@astrojs/tailwind": "^5.1.0",
-    "@types/react": "^18.2.58",
-    "@types/react-dom": "^18.2.19",
-    "astro": "^4.4.4",
-    "p-retry": "^6.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tailwindcss": "^3.4.1",
-    "tinybase": "^4.6.11",
-    "typescript": "^5.3.3"
+    "tailwindcss": "^3.4.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.10",
     "@types/node": "^20.11.20",
+    "@types/react": "^18.2.58",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
     "husky": "^9.0.11",
     "lint-staged": "^15.2.2",
+    "postcss": "^8.4.35",
     "prettier": "^3.2.5",
-    "prettier-plugin-astro": "^0.13.0"
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4",
+    "vite-tsconfig-paths": "^4.3.1"
   },
   "lint-staged": {
-    "*.{astro,js,ts,jsx,tsx,css,md,json}": "prettier --write --plugin=prettier-plugin-astro"
+    "*.{js,ts,jsx,tsx,css,md,json}": "prettier --write"
   }
 }

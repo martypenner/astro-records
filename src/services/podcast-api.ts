@@ -1,27 +1,37 @@
-import crypto from "node:crypto";
-import pRetry from "p-retry";
+import pRetry from 'p-retry';
 
-const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
-const apiSecret = import.meta.env.PUBLIC_PODCAST_INDEX_API_SECRET;
-const baseUrl = new URL("https://api.podcastindex.org/api/1.0");
+const apiKey = import.meta.env.VITE_PODCAST_INDEX_API_KEY;
+const apiSecret = import.meta.env.VITE_PODCAST_INDEX_API_SECRET;
+const baseUrl = new URL('https://api.podcastindex.org/api/1.0');
+
+async function createHash(
+  apiKey: string,
+  apiSecret: string,
+  apiHeaderTime: number,
+): Promise<string> {
+  const dataForHash = apiKey + apiSecret + apiHeaderTime;
+  const algo = 'SHA-1';
+  const encoder = new TextEncoder();
+  const data = encoder.encode(dataForHash);
+  const hashBuffer = await crypto.subtle.digest(algo, data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return hashHex;
+}
 
 const apiHeaderTime = Math.floor(Date.now() / 1000);
-const algo = "sha1";
-const hash = crypto.createHash(algo);
-const data4Hash = apiKey + apiSecret + apiHeaderTime;
-
-hash.update(data4Hash);
-
-const hash4Header = hash.digest("hex");
+const hashForHeader = await createHash(apiKey, apiSecret, apiHeaderTime);
 
 const options = {
-  method: "get",
+  method: 'get',
   headers: {
-    "Content-Type": "application/json",
-    "X-Auth-Date": apiHeaderTime.toString(),
-    "X-Auth-Key": apiKey,
-    Authorization: hash4Header,
-    "User-Agent": "CloudflarePodcaster/0.1",
+    'Content-Type': 'application/json',
+    'X-Auth-Date': apiHeaderTime.toString(),
+    'X-Auth-Key': apiKey,
+    Authorization: hashForHeader,
+    'User-Agent': 'CloudflarePodcaster/0.1',
   },
 };
 
@@ -49,12 +59,12 @@ type Feed = {
 export const searchByTerm = retryable(
   async (query: string): Promise<Feed[]> => {
     const url = new URL(baseUrl);
-    url.pathname = baseUrl.pathname.concat("/search/byterm");
+    url.pathname = baseUrl.pathname.concat('/search/byterm');
     const params = url.searchParams;
-    params.set("q", query);
+    params.set('q', query);
     url.search = params.toString();
     const response = await fetch(url, options).then((res) => res.json());
-    if (response.status !== "true") {
+    if (response.status !== 'true') {
       throw new Error(response.description);
     }
 
@@ -65,7 +75,7 @@ export const searchByTerm = retryable(
 export const trending = retryable(async (): Promise<Feed[]> => {
   const url = `${baseUrl}/podcasts/trending`;
   const response = await fetch(url, options).then((res) => res.json());
-  if (response.status !== "true") {
+  if (response.status !== 'true') {
     throw new Error(response.description);
   }
 

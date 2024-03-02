@@ -1,4 +1,4 @@
-/// <reference types="astro/client" />
+/// <reference types="vite/client" />
 
 interface ImportMetaEnv {
   readonly PUBLIC_PODCAST_INDEX_API_KEY: string;
