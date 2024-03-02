@@ -1,19 +1,33 @@
-import type * as Party from 'partykit/server';
+import { type Feed } from '@/services/podcast-api';
 import type { MessageWithID } from '@/types';
+import type * as Party from 'partykit/server';
 import type { MutationV1, PatchOperation, PullResponse } from 'replicache';
 
 declare const PARTYKIT_HOST: string;
 console.log('PartyKit host: ', PARTYKIT_HOST);
 
+interface FeedWithVersion extends Feed {
+  version: number;
+}
+
 export default class Server implements Party.Server {
-  version = 1;
-  messages: (MessageWithID & { version: number; deleted: boolean })[] = [];
-  clients: {
+  #messages: (MessageWithID & { version: number; deleted: boolean })[] = [];
+  #feeds: FeedWithVersion[] = [];
+
+  #version = 1;
+  #clients: {
     id: string;
     last_mutation_id: number;
     client_group_id: string;
     version: number;
   }[] = [];
+
+  #corsHeaders = new Headers({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS, PUT, PATCH, DELETE',
+  });
+
   constructor(readonly party: Party.Room) {}
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
@@ -35,6 +49,12 @@ export default class Server implements Party.Server {
       if (isPull) {
         return await this.handlePull(request);
       }
+    }
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: this.#corsHeaders,
+      });
     }
 
     return new Response('Method not allowed', { status: 405 });
@@ -101,14 +121,20 @@ export default class Server implements Party.Server {
       // We need to await here otherwise, Next.js will frequently kill the request
       // and the poke won't get sent.
       await this.sendPoke();
-      return new Response('{}', { status: 200 });
+      return new Response('{}', { status: 200, headers: this.#corsHeaders });
     } catch (e) {
       console.error(e);
       if (e instanceof Response) return e;
       if (e instanceof Error)
-        return new Response(e.toString(), { status: 500 });
+        return new Response(e.toString(), {
+          status: 500,
+          headers: this.#corsHeaders,
+        });
 
-      return new Response('Internal Server Error', { status: 500 });
+      return new Response('Internal Server Error', {
+        status: 500,
+        headers: this.#corsHeaders,
+      });
     } finally {
       console.log('Processed push in', Date.now() - t0);
     }
@@ -129,11 +155,18 @@ export default class Server implements Party.Server {
     try {
       return this.processPull(clientGroupID, fromVersion);
     } catch (e) {
+      console.error(e);
       if (e instanceof Response) return e;
       if (e instanceof Error)
-        return new Response(e.toString(), { status: 500 });
+        return new Response(e.toString(), {
+          status: 500,
+          headers: this.#corsHeaders,
+        });
 
-      return new Response('Internal Server Error', { status: 500 });
+      return new Response('Internal Server Error', {
+        status: 500,
+        headers: this.#corsHeaders,
+      });
     } finally {
       console.log('Processed pull in', Date.now() - t0);
     }
@@ -146,7 +179,7 @@ export default class Server implements Party.Server {
   ) {
     const { clientID } = mutation;
 
-    const prevVersion = Number(this.version || 0);
+    const prevVersion = Number(this.#version || 0);
     const nextVersion = prevVersion + 1;
 
     const lastMutationID = this.getLastMutationID(clientID);
@@ -181,6 +214,9 @@ export default class Server implements Party.Server {
         case 'createMessage':
           this.createMessage(mutation.args as MessageWithID, nextVersion);
           break;
+        case 'addFeeds':
+          this.addFeeds(mutation.args as Array<Feed>, nextVersion);
+          break;
         default:
           throw new Error(`Unknown mutation: ${mutation.name}`);
       }
@@ -204,11 +240,11 @@ export default class Server implements Party.Server {
     );
 
     // Update global version.
-    this.version = nextVersion;
+    this.#version = nextVersion;
   }
 
   processPull(clientGroupID: string, fromVersion: number) {
-    if (fromVersion > this.version) {
+    if (fromVersion > this.#version) {
       throw new Error(
         `fromVersion ${fromVersion} is from the future - aborting. This can happen in development if the server restarts. In that case, clear appliation data in browser and refresh.`,
       );
@@ -220,43 +256,60 @@ export default class Server implements Party.Server {
       fromVersion,
     );
 
-    // Get changed domain objects since requested version.
-
-    const changed = this.messages.filter((m) => m.version > fromVersion);
-
-    // Build and return response.
+    // Build up a set of patches to process.
     const patch: PatchOperation[] = [];
-    for (const row of changed) {
-      const { id, from, content, order, version: rowVersion, deleted } = row;
-      if (deleted) {
-        if (rowVersion > fromVersion) {
+
+    // Get changed domain objects (in this case, messages) since requested version.
+    {
+      const changed = this.#messages.filter((m) => m.version > fromVersion);
+      for (const row of changed) {
+        const { id, from, content, order, version: rowVersion, deleted } = row;
+        if (deleted) {
+          if (rowVersion > fromVersion) {
+            patch.push({
+              op: 'del',
+              key: `message/${id}`,
+            });
+          }
+        } else {
           patch.push({
-            op: 'del',
+            op: 'put',
             key: `message/${id}`,
+            value: {
+              from,
+              content: content,
+              order,
+            },
           });
         }
-      } else {
+      }
+    }
+
+    // Now do the same for feeds.
+    {
+      const changed = this.#feeds.filter((feed) => feed.version > fromVersion);
+      for (const feed of changed) {
         patch.push({
           op: 'put',
-          key: `message/${id}`,
-          value: {
-            from,
-            content: content,
-            order,
-          },
+          key: `feed/${feed.id}`,
+          value: feed,
         });
       }
     }
 
     const body: PullResponse = {
       lastMutationIDChanges: lastMutationIDChanges ?? {},
-      cookie: this.version,
+      cookie: this.#version,
       patch,
     };
-    return new Response(JSON.stringify(body), { status: 200 });
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: this.#corsHeaders,
+    });
   }
+
   getLastMutationIDChanges(clientGroupID: string, fromVersion: number) {
-    const clients = this.clients.filter(
+    const clients = this.#clients.filter(
       (c) => c.client_group_id === clientGroupID && c.version > fromVersion,
     );
 
@@ -264,7 +317,7 @@ export default class Server implements Party.Server {
   }
 
   getLastMutationID(clientID: string) {
-    const client = this.clients.find((c) => c.id === clientID);
+    const client = this.#clients.find((c) => c.id === clientID);
 
     if (!client) {
       return 0;
@@ -273,7 +326,11 @@ export default class Server implements Party.Server {
   }
 
   createMessage({ id, from, content, order }: MessageWithID, version: number) {
-    this.messages.push({ id, from, content, order, deleted: false, version });
+    this.#messages.push({ id, from, content, order, deleted: false, version });
+  }
+
+  addFeeds(feeds: Feed[], version: number) {
+    this.#feeds.push(...feeds.map((feed) => ({ ...feed, version })));
   }
 
   async setLastMutationID(
@@ -282,7 +339,7 @@ export default class Server implements Party.Server {
     mutationID: number,
     version: number,
   ) {
-    const client = this.clients.find((c) => c.id === clientID);
+    const client = this.#clients.find((c) => c.id === clientID);
     if (client) {
       client.client_group_id = clientGroupID;
       client.last_mutation_id = mutationID;
@@ -294,7 +351,7 @@ export default class Server implements Party.Server {
         last_mutation_id: mutationID,
         version,
       };
-      this.clients.push(client);
+      this.#clients.push(client);
       return;
     }
   }

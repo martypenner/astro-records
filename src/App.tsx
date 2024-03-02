@@ -1,30 +1,48 @@
 import { replicache } from '@/party/client';
-import { trending } from '@/services/podcast-api';
+import { type Feed } from '@/services/podcast-api';
 import type { Message } from '@/types';
 import { nanoid } from 'nanoid';
 import { useRef, type FormEvent } from 'react';
 import { useSubscribe } from 'replicache-react';
 
-const feeds = await trending();
+// const feeds = await trending();
 // const feeds = await searchByTerm("computer programming");
-console.log(feeds);
+// console.log(feeds);
+// replicache.mutate.addFeeds(feeds);
 
 export default function App() {
   return (
     <main className="prose lg:prose-xl">
-      <ul>
-        {feeds.map((feed) => (
-          <li key={feed.id}>
-            <a href={feed.url}>
-              <img src={feed.image} alt="" width={100} height={100} />
-              {feed.title}
-            </a>
-          </li>
-        ))}
-      </ul>
-
+      <TrendingPodcasts />
       <Messages />
     </main>
+  );
+}
+
+function TrendingPodcasts() {
+  const feeds = useSubscribe(
+    replicache,
+    async (tx) => {
+      const list = (await tx.scan({ prefix: 'feed/' }).entries().toArray()) as [
+        string,
+        Feed,
+      ][];
+      return list.map(([, feed]) => feed);
+    },
+    { default: [] },
+  );
+
+  return (
+    <ul>
+      {feeds.map((feed) => (
+        <li key={feed.id}>
+          <a href={feed.url}>
+            <img src={feed.image} alt="" width={100} height={100} />
+            {feed.title}
+          </a>
+        </li>
+      ))}
+    </ul>
   );
 }
 

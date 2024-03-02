@@ -11,13 +11,4 @@ export default defineConfig({
   define: {
     'import.meta.env.PARTYKIT_HOST': JSON.stringify(DEV_PARTYKIT_HOST),
   },
-
-  server: {
-    proxy: {
-      '/parties': {
-        target: DEV_PARTYKIT_HOST,
-        ws: true,
-      },
-    },
-  },
 });

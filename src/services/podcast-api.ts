@@ -48,7 +48,7 @@ const retryable =
       randomize: true,
     });
 
-type Feed = {
+export type Feed = {
   id: string;
   podcastGuid: string;
   title: string;
