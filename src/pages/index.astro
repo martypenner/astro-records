@@ -1,6 +1,10 @@
 ---
 import Card from '../components/Card.astro';
 import Layout from '../layouts/Layout.astro';
+import { trending } from '@/services/podcast-api';
+
+const feeds = await trending();
+console.log(feeds);
 
 const response = await fetch('https://music-api.charca.workers.dev/albums');
 const albums = await response.json();
