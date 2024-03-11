@@ -1,36 +1,36 @@
 import type { CSSProperties } from 'react';
-import { $isPlaying, $currentTrack } from './state';
+import { $isPlaying, $currentEpisode } from '../services/state';
 import { useStore } from '@nanostores/react';
 
-export default function Record({
-  albumId,
-  artist,
+export default function Podcast({
+  id,
+  author,
   title,
-  imageUrl,
+  image,
 }: {
-  albumId: string;
-  artist: string;
+  id: string;
+  author: string;
   title: string;
-  imageUrl: string;
+  image: string;
 }) {
-  const currentTrack = useStore($currentTrack);
+  const currentEpisode = useStore($currentEpisode);
   const isPlaying = useStore($isPlaying);
 
-  const isPlayingCurrentRecord = isPlaying && currentTrack.albumId === albumId;
+  const isPlayingCurrent = isPlaying && currentEpisode.id === id;
   const className =
     'absolute top-0 opacity-0 vynil-image vynil-animation-in' +
-    (isPlayingCurrentRecord ? '-spinning' : '');
+    (isPlayingCurrent ? '-spinning' : '');
 
   return (
     <div className="relative shadow-xl mr-32 w-72 md:w-auto">
       <img
-        src={imageUrl}
-        alt={`${artist} - ${title} album cover`}
+        src={image}
+        alt={`${author} - ${title}`}
         aria-hidden="true"
         width="400"
         height="400"
         className="block rounded-md tag-album-cover relative z-10 bg-white"
-        style={{ viewTransitionName: `record-${albumId}` } as CSSProperties}
+        style={{ viewTransitionName: `podcast-${id}` } as CSSProperties}
       />
       <img
         src="/vynil-lp.webp"
@@ -38,7 +38,7 @@ export default function Record({
         width="400"
         height="400"
         className={className}
-        style={{ viewTransitionName: `vinyl-${albumId}` } as CSSProperties}
+        style={{ viewTransitionName: `vinyl-${id}` } as CSSProperties}
         aria-hidden="true"
       />
     </div>

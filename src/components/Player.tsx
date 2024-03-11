@@ -1,15 +1,15 @@
 import { useStore } from '@nanostores/react';
-import { useEffect, useRef, useState } from 'react';
-import { $currentTrack, $isPlaying } from './state';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { $currentEpisode, $isPlaying } from '../services/state';
 
 export default function PlayerGuard() {
-  const currentTrack = useStore($currentTrack);
+  const currentEpisode = useStore($currentEpisode);
 
-  if (currentTrack == null) {
+  if (currentEpisode == null) {
     return;
   }
 
-  return <Player {...currentTrack} />;
+  return <Player {...currentEpisode} />;
 }
 
 const PlayIcon = (
@@ -50,7 +50,7 @@ const PauseIcon = (
 // that we will play over and over as the user uses the app.
 const MAX_SONGS = 4;
 
-function Player({ title, artist, albumName, imageUrl }) {
+function Player({ author, title, image }) {
   const isPlaying = useStore($isPlaying);
 
   const audioPlayer = useRef<HTMLAudioElement>(null);
@@ -58,14 +58,14 @@ function Player({ title, artist, albumName, imageUrl }) {
   const [songIndex, setSongIndex] = useState(4);
   const [progress, setProgress] = useState(0);
 
-  function whilePlaying() {
+  const whilePlaying = useCallback(() => {
     if (audioPlayer.current.duration) {
       const percentage =
         (audioPlayer.current.currentTime * 100) / audioPlayer.current.duration;
       setProgress(percentage);
     }
     progressRef.current = requestAnimationFrame(whilePlaying);
-  }
+  }, []);
 
   useEffect(() => {
     const newIndex = (songIndex % MAX_SONGS) + 1;
@@ -73,7 +73,7 @@ function Player({ title, artist, albumName, imageUrl }) {
     audioPlayer.current.currentTime = 0;
     audioPlayer.current.play();
     setSongIndex(newIndex);
-  }, [title]);
+  }, []);
 
   useEffect(() => {
     if ($isPlaying.value) {
@@ -83,7 +83,7 @@ function Player({ title, artist, albumName, imageUrl }) {
       audioPlayer.current?.pause();
       cancelAnimationFrame(progressRef.current);
     }
-  }, [$isPlaying.value]);
+  }, [isPlaying, whilePlaying]);
 
   useEffect(() => {
     if (progress >= 99.99) {
@@ -129,8 +129,9 @@ function Player({ title, artist, albumName, imageUrl }) {
       </div>
       <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center gap-5">
         <img
-          src={imageUrl}
-          alt={`${artist} - ${albumName} album cover`}
+          src={image}
+          // Decorative only
+          alt=""
           aria-hidden="true"
           width="60"
           height="60"
@@ -141,7 +142,7 @@ function Player({ title, artist, albumName, imageUrl }) {
             {title}
           </div>
           <div className="text-xl text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
-            {artist}
+            {author}
           </div>
         </div>
         <audio ref={audioPlayer} src="/mp3/song1.mp3" />

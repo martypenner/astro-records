@@ -1,13 +1,5 @@
 import { useStore } from '@nanostores/react';
-import { $currentTrack, $isPlaying, type Track } from './state';
-
-type Props = {
-  tracks: Track[];
-  albumName: string;
-  albumId: string;
-  artist: string;
-  imageUrl: string;
-};
+import { $currentEpisode, $isPlaying, type Episode } from '../services/state';
 
 const playIcon = (
   <svg
@@ -52,53 +44,61 @@ function renderIcon(icon: JSX.Element, position: number) {
   );
 }
 
-export default function TrackList({
-  tracks,
-  albumId,
-  albumName,
-  artist,
-  imageUrl,
+type Props = {
+  id: string;
+  title: string;
+  author: string;
+  image: string;
+  episodes: Episode[];
+};
+
+export default function EpisodeList({
+  episodes,
+  id,
+  title,
+  author,
+  image,
 }: Props) {
-  const currentTrack = useStore($currentTrack);
+  const currentEpisode = useStore($currentEpisode);
   const isPlaying = useStore($isPlaying);
 
   return (
     <ul className="text-xl" aria-label="Tracklist">
-      {tracks.map((track) => {
-        const isCurrentTrack = track.id == currentTrack?.id;
+      {episodes.map((episode) => {
+        const isCurrentEpisode = episode.id == currentEpisode?.id;
 
         return (
-          <li key={track.id} className="first:border-t border-b">
+          <li key={episode.id} className="first:border-t border-b">
             <button
               type="button"
               className="hover:bg-gray-50 focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center"
-              aria-current={isCurrentTrack}
+              aria-current={isCurrentEpisode}
               onClick={() => {
-                $currentTrack.set({
-                  ...track,
-                  albumName,
-                  albumId,
-                  artist,
-                  imageUrl,
+                $currentEpisode.set({
+                  ...episode,
+                  id,
+                  title: title,
+                  author,
+                  image,
                 });
 
-                $isPlaying.set(isCurrentTrack ? !$isPlaying.value : true);
+                $isPlaying.set(isCurrentEpisode ? !isPlaying : true);
               }}
             >
               <span className="text-gray-500 w-8 mr-2">
-                {isCurrentTrack && !$isPlaying.value
-                  ? renderIcon(pauseIcon, track.position)
-                  : isCurrentTrack && $isPlaying.value
-                    ? renderIcon(playIcon, track.position)
-                    : track.position}
+                {isCurrentEpisode && !isPlaying
+                  ? renderIcon(pauseIcon, episode.position)
+                  : isCurrentEpisode && isPlaying
+                    ? renderIcon(playIcon, episode.position)
+                    : episode.position}
               </span>
               <span className="sr-only"> - </span>
-              <span className="font-medium">{track.title}</span>
+              <span className="font-medium">{episode.title}</span>
               <span className="sr-only"> - </span>
-              <span className="text-gray-500 ml-auto">{track.length}</span>
+              <span className="text-gray-500 ml-auto">{episode.length}</span>
 
               <span className="sr-only">
-                (press to {isCurrentTrack && isPlaying ? 'pause)' : 'play)'}
+                (press to {isCurrentEpisode && isPlaying ? 'pause)' : 'play)'}
               </span>
             </button>
           </li>

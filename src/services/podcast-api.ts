@@ -1,4 +1,5 @@
 import pRetry from 'p-retry';
+import { type Episode, type Feed } from './state';
 
 const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
 const apiSecret = import.meta.env.PUBLIC_PODCAST_INDEX_API_SECRET;
@@ -48,15 +49,6 @@ const retryable =
       randomize: true,
     });
 
-export type Feed = {
-  id: string;
-  podcastGuid: string;
-  title: string;
-  description: string;
-  url: string;
-  image: string;
-};
-
 export const searchByTerm = retryable(
   async (query: string): Promise<Feed[]> => {
     const url = new URL(baseUrl);
@@ -82,3 +74,39 @@ export const trending = retryable(async (): Promise<Feed[]> => {
 
   return response.feeds as Feed[];
 });
+
+export const podcastById = retryable(async (id: string): Promise<Feed> => {
+  const params = new URLSearchParams();
+  params.set('id', id);
+  const url = `${baseUrl}/podcasts/byfeedid?${params.toString()}`;
+  const response = await fetch(url, options);
+  console.log(response);
+  if (response.status !== 200) {
+    throw response;
+  }
+  const data = await response.json();
+  if (data.status !== 'true') {
+    throw new Error(data.description);
+  }
+
+  return data.feed as Feed;
+});
+
+export const episodesByPodcastId = retryable(
+  async (id: string): Promise<Episode[]> => {
+    const params = new URLSearchParams();
+    params.set('id', id);
+    const url = `${baseUrl}/episodes/byfeedid?${params.toString()}`;
+    const response = await fetch(url, options);
+    console.log(response);
+    if (response.status !== 200) {
+      throw response;
+    }
+    const data = await response.json();
+    if (data.status !== 'true') {
+      throw new Error(data.description);
+    }
+
+    return data.items as Episode[];
+  },
+);
