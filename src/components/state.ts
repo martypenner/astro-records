@@ -1,4 +1,4 @@
-import { signal } from "@preact/signals";
+import { atom } from 'nanostores';
 
 export type Track = {
   id: string;
@@ -14,5 +14,5 @@ export type PlayerTrack = Track & {
   imageUrl: string;
 };
 
-export const isPlaying = signal(false);
-export const currentTrack = signal<PlayerTrack | null>(null);
+export const $isPlaying = atom(false);
+export const $currentTrack = atom<PlayerTrack | null>(null);
