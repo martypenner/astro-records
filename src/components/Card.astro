@@ -1,16 +1,19 @@
 ---
 type Props = {
-  id: string
-  name: string
-  artist: string
-  image_url: string
-}
+  id: string;
+  name: string;
+  artist: string;
+  image_url: string;
+};
 
-const { id, name, artist, image_url } = Astro.props
+const { id, name, artist, image_url } = Astro.props;
 ---
 
 <div class="flex flex-col">
-  <a href={`/album/${id}`} class="text-black hover:text-pink-700 focus-visible:ring-2 focus:outline-none focus:ring-black">
+  <a
+    href={`/album/${id}`}
+    class="text-black hover:text-pink-700 focus-visible:ring-2 focus:outline-none focus:ring-black"
+  >
     <div
       class="shadow-md hover:shadow-lg relative"
       transition:name={`record-${id}`}
@@ -33,7 +36,7 @@ const { id, name, artist, image_url } = Astro.props
         aria-hidden="true"
       />
     </div>
-  <div class="pt-4 font-semibold">{name}</div><span class="sr-only"> by</span>
+    <div class="pt-4 font-semibold">{name}</div><span class="sr-only"> by</span>
     <div class="pt-1 text-gray-700">{artist}</div>
   </a>
 </div>

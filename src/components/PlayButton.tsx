@@ -1,3 +1,4 @@
+import { useStore } from '@nanostores/react';
 import { $currentTrack, $isPlaying, type Track } from './state';
 
 type Props = {
@@ -15,6 +16,7 @@ export default function PlayButton({
   artist,
   imageUrl,
 }: Props) {
+  const isPlaying = useStore($isPlaying);
   return (
     <button
       type="button"
@@ -28,7 +30,7 @@ export default function PlayButton({
           imageUrl,
         });
 
-        $isPlaying.set(true);
+        $isPlaying.set(!isPlaying);
       }}
     >
       <svg

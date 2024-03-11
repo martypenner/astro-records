@@ -1,14 +1,18 @@
 {
-  "name": "@example/basics",
+  "name": "my-podcaster",
   "type": "module",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
+    "dev": "concurrently -n 'astro,partykit' 'astro dev' 'partykit dev --port 1999'",
     "start": "astro dev",
     "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write .",
+    "preview": "wrangler pages dev ./dist",
+    "deploy": "partykit deploy",
+    "astro": "astro",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^9.1.0",
@@ -18,9 +22,36 @@
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
     "astro": "^4.5.0",
+    "nanoid": "^5.0.6",
     "nanostores": "^0.10.0",
+    "p-retry": "^6.2.0",
+    "partysocket": "*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "tailwindcss": "^3.4.1"
+    "replicache": "14.2.2",
+    "replicache-react": "^5.0.1",
+    "tailwindcss": "^3.4.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.10",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^7.1.0",
+    "@typescript-eslint/parser": "^7.1.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.2",
+    "partykit": "^0.0.96",
+    "prettier": "^3.2.5",
+    "prettier-plugin-astro": "^0.13.0",
+    "typescript": "^5.3.3"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx,css,md,json,astro}": "prettier --write"
   }
 }
