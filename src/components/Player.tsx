@@ -56,9 +56,9 @@ const PauseIcon = (
 // that we will play over and over as the user uses the app.
 const MAX_SONGS = 4;
 
-type PlayerProps = Pick<Episode, 'author' | 'title' | 'image'>;
+type PlayerProps = Pick<Episode, 'feedId' | 'author' | 'title' | 'image'>;
 
-function Player({ author, title, image }: PlayerProps) {
+function Player({ feedId, author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
 
   const audioPlayer = useRef<HTMLAudioElement>(null);
@@ -135,24 +135,26 @@ function Player({ author, title, image }: PlayerProps) {
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center gap-5">
-        <img
-          src={image}
-          // Decorative only
-          alt=""
-          aria-hidden="true"
-          width="60"
-          height="60"
-          className="block rounded-md"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="text-xl text-black font-medium overflow-hidden text-ellipsis whitespace-nowrap">
-            {title}
+      <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between gap-5">
+        <a href={`/podcast/${feedId}`} className="flex items-center gap-5">
+          <img
+            src={image}
+            // Decorative only
+            alt=""
+            aria-hidden="true"
+            width="60"
+            height="60"
+            className="block rounded-md"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="text-xl text-black font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+              {title}
+            </div>
+            <div className="text-xl text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
+              {author}
+            </div>
           </div>
-          <div className="text-xl text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
-            {author}
-          </div>
-        </div>
+        </a>
         <audio ref={audioPlayer} src="/mp3/song1.mp3" />
         <div className="flex gap-6 items-center text-black">
           <button

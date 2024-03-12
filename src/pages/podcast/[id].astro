@@ -9,6 +9,7 @@ const { id } = Astro.params;
 const podcast = await podcastById(id.toString());
 const episodes = (await episodesByPodcastId(podcast.id)).map((episode) => ({
   ...episode,
+  feedId: podcast.id,
   image:
     (episode?.image ?? '').trim().length === 0 ? podcast.image : episode.image,
 }));

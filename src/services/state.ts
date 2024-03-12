@@ -11,6 +11,7 @@ export type Feed = {
 
 export type Episode = {
   id: string;
+  feedId: string;
   title: string;
   description: string;
   author: string;
