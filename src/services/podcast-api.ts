@@ -106,7 +106,25 @@ export const episodesByPodcastId = retryable(
     if (data.status !== 'true') {
       throw new Error(data.description);
     }
+    console.log(data);
 
-    return data.items as Episode[];
+    return data.items.map((episode) => ({
+      id: episode.id,
+      title: episode.title,
+      description: episode.description,
+      author: episode.author,
+      image: episode.image.trim().length === 0 ? null : episode.image,
+      datePublished: new Date(episode.datePublished * 1000),
+      durationFormatted: formatDuration(episode.duration),
+      duration: episode.duration,
+      number: episode.episode,
+    })) as Episode[];
   },
 );
+
+function formatDuration(duration: number): string {
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor((duration % 3600) / 60);
+  const seconds = duration % 60;
+  return `${hours === 0 ? '' : hours + ':'}${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+}

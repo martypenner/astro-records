@@ -7,7 +7,11 @@ import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
 
 const { id } = Astro.params;
 const podcast = await podcastById(id.toString());
-const episodes = await episodesByPodcastId(podcast.id);
+const episodes = (await episodesByPodcastId(podcast.id)).map((episode) => ({
+  ...episode,
+  image:
+    (episode?.image ?? '').trim().length === 0 ? podcast.image : episode.image,
+}));
 ---
 
 <Layout title={`${podcast.title} by ${podcast.author} - Astro Podcasts`}>
@@ -15,13 +19,7 @@ const episodes = await episodesByPodcastId(podcast.id);
     <div
       class="container mx-auto max-w-screen-lg px-6 lg:px-0 flex flex-col items-start md:items-end md:flex-row pt-8 pb-12"
     >
-      <Podcast
-        client:load
-        id={podcast.id}
-        author={podcast.author}
-        title={podcast.title}
-        image={podcast.image}
-      />
+      <Podcast client:visible {...podcast} />
       <div class="flex-1 flex flex-col justify-end pt-8">
         <h1 id="page-heading">
           <div class="text-5xl font-bold tracking-tight text-gray-900">
@@ -33,13 +31,7 @@ const episodes = await episodesByPodcastId(podcast.id);
           {podcast.description}
         </div>
         <div class="mt-3 flex">
-          <PlayButton
-            client:load
-            id={podcast.id}
-            title={podcast.title}
-            author={podcast.author}
-            image={podcast.image}
-          />
+          {episodes.length > 0 && <PlayButton client:load {...episodes[0]} />}
           <button
             disabled
             type="button"
@@ -65,14 +57,7 @@ const episodes = await episodesByPodcastId(podcast.id);
     </div>
 
     <div class="container mx-auto max-w-screen-lg mb-10">
-      <EpisodeList
-        client:load
-        id={podcast.id}
-        title={podcast.title}
-        author={podcast.author}
-        image={podcast.image}
-        episodes={episodes}
-      />
+      <EpisodeList client:visible episodes={episodes} />
     </div>
   </section>
 </Layout>

@@ -1,6 +1,12 @@
 import { useStore } from '@nanostores/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { $currentEpisode, $isPlaying } from '../services/state';
+import {
+  $currentEpisode,
+  $isPlaying,
+  pause,
+  togglePlay,
+  type Episode,
+} from '../services/state';
 
 export default function PlayerGuard() {
   const currentEpisode = useStore($currentEpisode);
@@ -50,7 +56,9 @@ const PauseIcon = (
 // that we will play over and over as the user uses the app.
 const MAX_SONGS = 4;
 
-function Player({ author, title, image }) {
+type PlayerProps = Pick<Episode, 'author' | 'title' | 'image'>;
+
+function Player({ author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
 
   const audioPlayer = useRef<HTMLAudioElement>(null);
@@ -76,7 +84,7 @@ function Player({ author, title, image }) {
   }, []);
 
   useEffect(() => {
-    if ($isPlaying.value) {
+    if (isPlaying) {
       audioPlayer.current?.play();
       progressRef.current = requestAnimationFrame(whilePlaying);
     } else {
@@ -87,7 +95,7 @@ function Player({ author, title, image }) {
 
   useEffect(() => {
     if (progress >= 99.99) {
-      $isPlaying.set(false);
+      pause();
       setProgress(0);
     }
   }, [progress]);
@@ -168,12 +176,10 @@ function Player({ author, title, image }) {
           <button
             type="button"
             className="focus-visible:ring-2 focus:outline-none focus:ring-black"
-            onClick={() => $isPlaying.set(!$isPlaying.value)}
+            onClick={() => togglePlay()}
           >
             {isPlaying ? PauseIcon : PlayIcon}
-            <span className="sr-only">
-              {$isPlaying.value ? 'Pause' : 'Play'}
-            </span>
+            <span className="sr-only">{isPlaying ? 'Pause' : 'Play'}</span>
           </button>
 
           <button

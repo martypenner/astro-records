@@ -1,29 +1,13 @@
-import { useStore } from '@nanostores/react';
-import { $currentEpisode, $isPlaying } from '../services/state';
+import { playEpisode, type Episode } from '../services/state';
 
-type Props = {
-  id: string;
-  title: string;
-  author: string;
-  image: string;
-};
+type Props = Episode;
 
-export default function PlayButton({ id, title, author, image }: Props) {
-  const isPlaying = useStore($isPlaying);
+export default function PlayButton(episode: Props) {
   return (
     <button
       type="button"
       className="text-pink-700 bg-gray-100 hover:bg-gray-200 focus-visible:ring-2 focus:outline-none focus:ring-black font-medium rounded-lg text-lg px-10 py-3 text-center inline-flex items-center dark:focus:ring-black mr-4"
-      onClick={() => {
-        $currentEpisode.set({
-          id,
-          title: title,
-          author,
-          image,
-        });
-
-        $isPlaying.set(!isPlaying);
-      }}
+      onClick={() => playEpisode(episode)}
     >
       <svg
         className="w-6 h-6 mr-2 -ml-1 text-pink-700"
