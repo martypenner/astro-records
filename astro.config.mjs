@@ -2,7 +2,6 @@ import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
-import process from 'node:process';
 import dotenv from 'dotenv';
 
 dotenv.config({
