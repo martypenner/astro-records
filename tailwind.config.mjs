@@ -1,4 +1,5 @@
 import typography from '@tailwindcss/typography';
+import reactAria from 'tailwindcss-react-aria-components';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -10,5 +11,5 @@ export default {
       },
     },
   },
-  plugins: [typography],
+  plugins: [typography, reactAria],
 };

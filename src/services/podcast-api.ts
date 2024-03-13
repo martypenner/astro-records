@@ -117,7 +117,10 @@ export const episodesByPodcastId = retryable(
       durationFormatted: formatDuration(episode.duration),
       duration: episode.duration,
       number: episode.episode,
-    })) as Episode[];
+      enclosureUrl: new URL(episode.enclosureUrl),
+      enclosureType: episode.enclosureType,
+      explicit: episode.explicit === 1,
+    }));
   },
 );
 

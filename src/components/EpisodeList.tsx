@@ -1,10 +1,5 @@
 import { useStore } from '@nanostores/react';
-import {
-  $currentEpisode,
-  $isPlaying,
-  playEpisode,
-  type Episode,
-} from '../services/state';
+import { $currentEpisode, $isPlaying, playEpisode } from '../services/state';
 
 type Props = {
   episodes: Episode[];

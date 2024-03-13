@@ -17,8 +17,15 @@ type Episode = {
   datePublished: Date;
   duration: number;
   durationFormatted: string;
+  /** The episode number within the broader feed, e.g. 605. */
   number: number;
+  enclosureUrl: URL;
+  enclosureType: MIMEType;
+  explicit: boolean;
 };
+
+// This should eventually be a union of all types we encounter.
+type MIMEType = string;
 
 type Message = {
   from: string;

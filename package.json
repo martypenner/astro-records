@@ -27,6 +27,7 @@
     "p-retry": "^6.2.0",
     "partysocket": "*",
     "react": "^18.2.0",
+    "react-aria-components": "^1.1.1",
     "react-dom": "^18.2.0",
     "replicache": "14.2.2",
     "replicache-react": "^5.0.1",
@@ -50,6 +51,7 @@
     "partykit": "^0.0.96",
     "prettier": "^3.2.5",
     "prettier-plugin-astro": "^0.13.0",
+    "tailwindcss-react-aria-components": "^1.1.1",
     "typescript": "^5.3.3"
   },
   "lint-staged": {

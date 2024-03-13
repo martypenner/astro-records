@@ -1,4 +1,11 @@
 import { useStore } from '@nanostores/react';
+import {
+  Label,
+  Slider,
+  SliderOutput,
+  SliderThumb,
+  SliderTrack,
+} from 'react-aria-components';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   $currentEpisode,
@@ -51,47 +58,44 @@ const PauseIcon = (
   </svg>
 );
 
-// This app doesn't have real songs, it only has a few songs
-// that we will play over and over as the user uses the app.
-const MAX_SONGS = 4;
-
 type PlayerProps = Pick<Episode, 'feedId' | 'author' | 'title' | 'image'>;
 
 function Player({ feedId, author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
+  const currentEpisode = useStore($currentEpisode);
 
   const audioPlayer = useRef<HTMLAudioElement>(null);
   const progressRef = useRef(null);
-  const [songIndex, setSongIndex] = useState(4);
   const [progress, setProgress] = useState(0);
 
-  const whilePlaying = useCallback(() => {
+  const updatePlayProgress = useCallback(() => {
     if (audioPlayer.current.duration) {
       const percentage =
         (audioPlayer.current.currentTime * 100) / audioPlayer.current.duration;
       setProgress(percentage);
     }
-    progressRef.current = requestAnimationFrame(whilePlaying);
+    progressRef.current = requestAnimationFrame(updatePlayProgress);
   }, []);
 
+  // When the current episode's enclosure URL changes - the actual audio file URL - reset play progress.
   useEffect(() => {
-    const newIndex = (songIndex % MAX_SONGS) + 1;
-    audioPlayer.current.src = `/mp3/song${newIndex}.mp3`;
+    audioPlayer.current.src = currentEpisode.enclosureUrl.toString();
     audioPlayer.current.currentTime = 0;
-    audioPlayer.current.play();
-    setSongIndex(newIndex);
-  }, []);
+    audioPlayer.current?.play();
+  }, [currentEpisode.enclosureUrl]);
 
+  // This syncs the store play state with the audio player element.
   useEffect(() => {
     if (isPlaying) {
       audioPlayer.current?.play();
-      progressRef.current = requestAnimationFrame(whilePlaying);
+      updatePlayProgress();
     } else {
       audioPlayer.current?.pause();
       cancelAnimationFrame(progressRef.current);
     }
-  }, [isPlaying, whilePlaying]);
+  }, [isPlaying, updatePlayProgress]);
 
+  // Reset progress and pause once we hit the end of the episode.
   useEffect(() => {
     if (progress >= 99.99) {
       pause();
@@ -109,7 +113,35 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       <h2 id="audio-player-heading" className="sr-only">
         Audio player
       </h2>
-      <div className="flex-1 bg-gray-200 h-1.5 dark:bg-gray-700">
+
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 flex justify-center">
+        {/* TODO: ensure all values are clamped 0-100, but keep the duration of the episode in mind */}
+        <Slider
+          aria-label="Audio timeline"
+          className="w-full"
+          defaultValue={0}
+          minValue={0}
+          maxValue={audioPlayer.current?.duration ?? 0}
+          onChange={(time: number) => (audioPlayer.current.currentTime = time)}
+        >
+          <SliderTrack className="relative w-full h-7">
+            {({ state }) => (
+              <>
+                {/* track */}
+                <div className="absolute h-2 top-[50%] translate-y-[-50%] w-full rounded-full bg-white/40" />
+                {/* fill */}
+                <div
+                  className="absolute h-2 top-[50%] translate-y-[-50%] rounded-full bg-white"
+                  style={{ width: state.getThumbPercent(0) * 100 + '%' }}
+                />
+                <SliderThumb className="h-7 w-7 top-[50%] rounded-full border border-solid border-purple-800/75 bg-white transition dragging:bg-purple-100 outline-none focus-visible:ring-2 ring-black" />
+              </>
+            )}
+          </SliderTrack>
+        </Slider>
+      </div>
+
+      <div className="flex-1 bg-gray-200 h-3 dark:bg-gray-700">
         <div
           aria-orientation="horizontal"
           role="slider"
@@ -130,11 +162,12 @@ function Player({ feedId, author, title, image }: PlayerProps) {
               ? Math.floor(audioPlayer.current.currentTime)
               : 0
           } seconds`}
-          className="bg-pink-700 h-1.5"
+          className="bg-pink-700 h-full"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
       <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between gap-5">
+        {/* TODO: maybe link to the episode instead? some sort of slide-in player? */}
         <a href={`/podcast/${feedId}`} className="flex items-center gap-5">
           <img
             src={image}
@@ -154,7 +187,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
             </div>
           </div>
         </a>
-        <audio ref={audioPlayer} src="/mp3/song1.mp3" />
+        <audio ref={audioPlayer} />
         <div className="flex gap-6 items-center text-black">
           <button
             type="button"
@@ -171,7 +204,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
             >
               <path d="M9.195 18.44c1.25.713 2.805-.19 2.805-1.629v-2.34l6.945 3.968c1.25.714 2.805-.188 2.805-1.628V8.688c0-1.44-1.555-2.342-2.805-1.628L12 11.03v-2.34c0-1.44-1.555-2.343-2.805-1.629l-7.108 4.062c-1.26.72-1.26 2.536 0 3.256l7.108 4.061z" />
             </svg>
-            <span className="sr-only">Previous track</span>
+            <span className="sr-only">Previous in queue</span>
           </button>
 
           <button
@@ -198,7 +231,8 @@ function Player({ feedId, author, title, image }: PlayerProps) {
             >
               <path d="M5.055 7.06c-1.25-.714-2.805.189-2.805 1.628v8.123c0 1.44 1.555 2.342 2.805 1.628L12 14.471v2.34c0 1.44 1.555 2.342 2.805 1.628l7.108-4.061c1.26-.72 1.26-2.536 0-3.256L14.805 7.06C13.555 6.346 12 7.25 12 8.688v2.34L5.055 7.06z" />
             </svg>
-            <span className="sr-only">Next track</span>
+            {/* TODO: can probably make these announcements more helpful by adding actual episode numbers and names, along with the podcast they relate to */}
+            <span className="sr-only">Next in queue</span>
           </button>
         </div>
       </div>
