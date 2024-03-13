@@ -112,7 +112,12 @@ export const episodesByPodcastId = retryable(
       title: episode.title,
       description: episode.description,
       author: episode.author,
-      image: episode.image.trim().length === 0 ? null : episode.image,
+      image:
+        episode.image.trim().length === 0
+          ? null
+          : episode.image == null
+            ? episode.feedImage
+            : episode.image,
       datePublished: new Date(episode.datePublished * 1000),
       durationFormatted: formatDuration(episode.duration),
       duration: episode.duration,
