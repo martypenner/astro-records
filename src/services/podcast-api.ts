@@ -1,5 +1,4 @@
 import pRetry from 'p-retry';
-import { type Episode, type Feed } from './state';
 
 const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
 const apiSecret = import.meta.env.PUBLIC_PODCAST_INDEX_API_SECRET;

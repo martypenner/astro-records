@@ -1,27 +1,5 @@
 import { atom } from 'nanostores';
 
-export type Feed = {
-  id: string;
-  author: string;
-  title: string;
-  description: string;
-  url: string;
-  image: string;
-};
-
-export type Episode = {
-  id: string;
-  feedId: string;
-  title: string;
-  description: string;
-  author: string;
-  image?: string;
-  datePublished: Date;
-  duration: number;
-  durationFormatted: string;
-  number: number;
-};
-
 export const $isPlaying = atom(false);
 export const $currentEpisode = atom<Episode | null>(null);
 

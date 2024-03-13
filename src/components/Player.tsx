@@ -5,7 +5,6 @@ import {
   $isPlaying,
   pause,
   togglePlay,
-  type Episode,
 } from '../services/state';
 
 export default function PlayerGuard() {

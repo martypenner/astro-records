@@ -1,7 +1,5 @@
 import PartySocket from 'partysocket';
 import { Replicache, type WriteTransaction } from 'replicache';
-import type { MessageWithID } from '@/types';
-import { type Feed } from '@/services/podcast-api';
 
 const PARTYKIT_HOST = import.meta.env.PARTYKIT_HOST;
 const PARTY_NAME = 'main';

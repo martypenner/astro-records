@@ -1,6 +1,4 @@
 import { replicache } from '@/party/client';
-import { type Feed } from '@/services/podcast-api';
-import type { Message } from '@/types';
 import { nanoid } from 'nanoid';
 import { useRef, type FormEvent } from 'react';
 import { useSubscribe } from 'replicache-react';

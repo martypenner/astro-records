@@ -1,4 +1,4 @@
-import { playEpisode, type Episode } from '../services/state';
+import { playEpisode } from '../services/state';
 
 type Props = Episode;
 
