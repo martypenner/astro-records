@@ -16,7 +16,7 @@ const episodes = (await episodesByPodcastId(podcast.id)).map((episode) => ({
 <Layout title={`${podcast.title} by ${podcast.author} - Astro Podcasts`}>
   <section aria-labelledby="page-heading">
     <div
-      class="container mx-auto max-w-screen-lg px-6 lg:px-0 flex flex-col items-start md:items-end md:flex-row pt-8 pb-12"
+      class="container mx-auto max-w-screen-lg px-6 lg:px-0 flex flex-col items-start md:items-center md:flex-row pt-8 pb-12"
     >
       <Podcast client:visible {...podcast} />
       <div class="flex-1 flex flex-col justify-end pt-8">
