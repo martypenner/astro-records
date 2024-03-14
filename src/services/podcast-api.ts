@@ -95,6 +95,7 @@ export const episodesByPodcastId = retryable(
   async (id: string): Promise<Episode[]> => {
     const params = new URLSearchParams();
     params.set('id', id);
+    params.set('fulltext', 'true');
     const url = `${baseUrl}/episodes/byfeedid?${params.toString()}`;
     const response = await fetch(url, options);
     console.log(response);
