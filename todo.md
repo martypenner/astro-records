@@ -7,3 +7,6 @@
 - [ ] add transcripts somehow
 - [ ] volume control
 - [ ] show buffering state
+- [ ] fixed width episode numbers
+- [ ] don't reset when the slider is being dragged
+- [ ] show current time somewhere in player
