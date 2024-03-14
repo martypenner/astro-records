@@ -1,11 +1,5 @@
 import { useStore } from '@nanostores/react';
-import {
-  Label,
-  Slider,
-  SliderOutput,
-  SliderThumb,
-  SliderTrack,
-} from 'react-aria-components';
+import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   $currentEpisode,
@@ -71,7 +65,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
   const updatePlayProgress = useCallback(() => {
     if (audioPlayer.current.duration) {
       const percentage =
-        (audioPlayer.current.currentTime * 100) / audioPlayer.current.duration;
+        (audioPlayer.current.currentTime / audioPlayer.current.duration) * 100;
       setProgress(percentage);
     }
     progressRef.current = requestAnimationFrame(updatePlayProgress);
@@ -79,6 +73,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
 
   // When the current episode's enclosure URL changes - the actual audio file URL - reset play progress.
   useEffect(() => {
+    setProgress(0);
     audioPlayer.current.src = currentEpisode.enclosureUrl.toString();
     audioPlayer.current.currentTime = 0;
     audioPlayer.current?.play();
@@ -115,14 +110,18 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       </h2>
 
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 flex justify-center">
-        {/* TODO: ensure all values are clamped 0-100, but keep the duration of the episode in mind */}
         <Slider
           aria-label="Audio timeline"
           className="w-full"
-          defaultValue={0}
+          value={progress}
           minValue={0}
-          maxValue={audioPlayer.current?.duration ?? 0}
-          onChange={(time: number) => (audioPlayer.current.currentTime = time)}
+          maxValue={100}
+          step={0.1}
+          onChange={(progress: number) => {
+            setProgress(progress);
+            audioPlayer.current.currentTime =
+              (audioPlayer.current.duration * progress) / 100;
+          }}
         >
           <SliderTrack className="relative w-full h-7">
             {({ state }) => (
