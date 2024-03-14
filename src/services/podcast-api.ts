@@ -114,7 +114,7 @@ export const episodesByPodcastId = retryable(
       author: episode.author,
       image:
         episode.image.trim().length === 0
-          ? null
+          ? episode.feedImage
           : episode.image == null
             ? episode.feedImage
             : episode.image,
