@@ -3,7 +3,7 @@ import { useFeeds } from '@/reflect/subscriptions';
 import { Card } from './Card';
 
 export function FeedList() {
-  const feeds = useFeeds(r) ?? [];
+  const feeds = useFeeds(r);
 
   return (
     <>

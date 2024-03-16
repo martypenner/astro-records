@@ -12,7 +12,7 @@ export default function EpisodeList({ podcastId }: Props) {
   const currentEpisode = useStore($currentEpisode);
   const isPlaying = useStore($isPlaying);
 
-  const episodes = useEpisodesForFeed(r, podcastId) ?? [];
+  const episodes = useEpisodesForFeed(r, podcastId);
 
   return (
     <>

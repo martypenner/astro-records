@@ -1,8 +1,11 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import { FeedList } from '@/components/FeedList';
+import Guard from '../components/Guard';
 ---
 
 <Layout>
-  <FeedList client:only transition:animate="initial" />
+  <Guard client:only>
+    <FeedList client:only transition:animate="initial" />
+  </Guard>
 </Layout>

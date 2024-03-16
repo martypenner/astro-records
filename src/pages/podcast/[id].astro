@@ -1,10 +1,13 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import Podcast from '@/components/Podcast';
+import Guard from '@/components/Guard';
 
 const { id } = Astro.params;
 ---
 
 <Layout>
-  <Podcast client:only id={id} />
+  <Guard client:only>
+    <Podcast client:only id={id} />
+  </Guard>
 </Layout>

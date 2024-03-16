@@ -1,6 +1,7 @@
+import type { Episode } from '@/data';
 import { useStore } from '@nanostores/react';
-import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import {
   $currentEpisode,
   $isPlaying,

@@ -21,10 +21,10 @@ import { useEffect } from 'react';
 import type { Mutators } from './mutators';
 
 export function useInitialized(reflect: Reflect<Mutators>): boolean {
-  return useSubscribe(
+  const initialized = useSubscribe(
     reflect,
     async (tx) => {
-      const initialized = tx.get('/init');
+      const initialized = await tx.get<true>('/init');
       if (!initialized) {
         await reflect.mutate.initialize();
       }
@@ -32,9 +32,10 @@ export function useInitialized(reflect: Reflect<Mutators>): boolean {
     },
     false,
   );
+  return initialized;
 }
 
-export function useFeeds(reflect: Reflect<Mutators>): Feed[] | null {
+export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
   const initialized = useInitialized(reflect);
   const feeds = useSubscribe(
     reflect,
@@ -63,7 +64,7 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] | null {
     }
   }, [feeds, initialized, reflect.mutate]);
 
-  return feeds;
+  return feeds ?? [];
 }
 
 export function useFeedById(
@@ -82,15 +83,11 @@ export function useFeedById(
 export function useEpisodesForFeed(
   reflect: Reflect<Mutators>,
   feedId: Feed['id'] | null,
-): Episode[] | null {
+): Episode[] {
   const initialized = useInitialized(reflect);
   const episodes = useSubscribe(
     reflect,
     async (tx) => {
-      if (feedId == null) {
-        return [];
-      }
-
       const list = (
         (await tx
           .scan({ prefix: `episode/${feedId}/` })
@@ -127,5 +124,5 @@ export function useEpisodesForFeed(
     }
   }, [episodes, feedId, initialized, reflect.mutate]);
 
-  return episodes;
+  return episodes ?? [];
 }
