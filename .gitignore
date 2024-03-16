@@ -1,4 +1,5 @@
 .partykit
+.reflect
 
 # build output
 dist/

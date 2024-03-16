@@ -1,3 +1,4 @@
+import type { ApiEpisode, Episode, Feed } from '@/data';
 import pRetry from 'p-retry';
 
 const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
@@ -77,6 +78,7 @@ export const trending = retryable(async (): Promise<Feed[]> => {
 export const podcastById = retryable(async (id: string): Promise<Feed> => {
   const params = new URLSearchParams();
   params.set('id', id);
+  params.set('fulltext', 'true');
   const url = `${baseUrl}/podcasts/byfeedid?${params.toString()}`;
   const response = await fetch(url, options);
   console.log(response);
@@ -108,8 +110,9 @@ export const episodesByPodcastId = retryable(
     }
     console.log(data);
 
-    return data.items.map((episode) => ({
+    return (data.items as ApiEpisode[]).map((episode) => ({
       id: episode.id,
+      feedId: id,
       title: episode.title,
       description: episode.description,
       author: episode.author,
@@ -122,11 +125,11 @@ export const episodesByPodcastId = retryable(
       datePublished: new Date(episode.datePublished * 1000),
       durationFormatted: formatDuration(episode.duration),
       duration: episode.duration,
-      number: episode.episode,
-      enclosureUrl: new URL(episode.enclosureUrl),
+      episode: episode.episode,
+      enclosureUrl: episode.enclosureUrl,
       enclosureType: episode.enclosureType,
       explicit: episode.explicit === 1,
-    }));
+    })) as Episode[];
   },
 );
 

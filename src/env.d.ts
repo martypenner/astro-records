@@ -3,7 +3,7 @@
 interface ImportMetaEnv {
   readonly PUBLIC_PODCAST_INDEX_API_KEY: string;
   readonly PUBLIC_PODCAST_INDEX_API_SECRET: string;
-  readonly PARTYKIT_HOST: string;
+  readonly PUBLIC_REFLECT_URL: string;
 }
 
 interface ImportMeta {

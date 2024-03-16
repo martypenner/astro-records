@@ -27,4 +27,14 @@ All commands are run from the root of the project, from a terminal:
 
 Check out [Astro's documentation](https://docs.astro.build) or jump into their [Discord server](https://astro.build/chat).
 
-You can also reach out to [Maxi on Twitter](https://twitter.com/charca).
+## To Publish
+
+```bash
+# Publish the Reflect server
+pnpx reflect publish --app=my-app
+
+# Publish the UI somewhere, i.e. Vercel.
+# You will need to set the environment variable VITE_REFLECT_URL to whatever
+# `pnpx reflect publish` output above.
+pnpx vercel
+```

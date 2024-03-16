@@ -1,36 +1,21 @@
+import type { Feed } from '@/data';
+import { r } from '@/reflect';
+import { useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
 import { $currentEpisode, $isPlaying, playEpisode } from '../services/state';
-import { replicache } from '@/party/client';
-import { useSubscribe } from 'replicache-react';
 
 type Props = {
-  episodes: Episode[];
+  podcastId: Feed['id'];
 };
 
-export default function EpisodeList({ episodes }: Props) {
+export default function EpisodeList({ podcastId }: Props) {
   const currentEpisode = useStore($currentEpisode);
   const isPlaying = useStore($isPlaying);
 
-  // const episodes = useSubscribe(
-  //   replicache,
-  //   async (tx) => {
-  //     const list = (await tx
-  //       .scan({ prefix: 'episode/' })
-  //       .entries()
-  //       .toArray()) as unknown as [string, Episode][];
-  //     return list.map(([, episode]) => ({
-  //       ...episode,
-  //       enclosureUrl: new URL(episode.enclosureUrl),
-  //       datePublished: new Date(episode.datePublished),
-  //     }));
-  //   },
-  //   { default: [] },
-  // );
-  // console.log('episodes', episodes);
+  const episodes = useEpisodesForFeed(r, podcastId);
 
   return (
     <>
-      <TrendingPodcasts />
       <ul className="text-xl" aria-label="Tracklist">
         {episodes.map((episode) => {
           const isCurrentEpisode = episode.id == currentEpisode?.id;
@@ -44,7 +29,7 @@ export default function EpisodeList({ episodes }: Props) {
                 onClick={() => playEpisode(episode)}
               >
                 <div className="flex basis grow w-full items-center gap-4">
-                  <span className="font-normal text-md">{episode.number}</span>
+                  <span className="font-normal text-md">{episode.episode}</span>
                   <div className="flex flex-col justify-start items-start">
                     <span className="text-sm mb-1">
                       {episode.datePublished.toLocaleDateString()}
@@ -69,32 +54,5 @@ export default function EpisodeList({ episodes }: Props) {
         })}
       </ul>
     </>
-  );
-}
-
-function TrendingPodcasts() {
-  const feeds = useSubscribe(
-    replicache,
-    async (tx) => {
-      const list = (await tx.scan({ prefix: 'feed/' }).entries().toArray()) as [
-        string,
-        Feed,
-      ][];
-      return list.map(([, feed]) => feed);
-    },
-    { default: [] },
-  );
-
-  return (
-    <ul>
-      {feeds.map((feed) => (
-        <li key={feed.id}>
-          <a href={feed.url}>
-            <img src={feed.image} alt="" width={100} height={100} />
-            {feed.title}
-          </a>
-        </li>
-      ))}
-    </ul>
   );
 }

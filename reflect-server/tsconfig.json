@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext"],
+    "module": "NodeNext",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "incremental": true
+  },
+  "include": ["**/*.ts", "../src/subscriptions.ts", "../src/mutators.ts"],
+  "extends": "../tsconfig.json"
+}
