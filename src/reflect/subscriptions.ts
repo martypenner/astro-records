@@ -10,13 +10,32 @@
 // changes. The subscription "fires" when the result of the query changes.
 
 import type { Episode, Feed, StoredEpisode } from '@/data';
-import { trending } from '@/services/podcast-api';
+import {
+  episodesByPodcastId,
+  podcastById,
+  trending,
+} from '@/services/podcast-api';
 import type { Reflect } from '@rocicorp/reflect/client';
 import { useSubscribe } from '@rocicorp/reflect/react';
 import { useEffect } from 'react';
 import type { Mutators } from './mutators';
 
-export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
+export function useInitialized(reflect: Reflect<Mutators>): boolean {
+  return useSubscribe(
+    reflect,
+    async (tx) => {
+      const initialized = tx.get('/init');
+      if (!initialized) {
+        await reflect.mutate.initialize();
+      }
+      return true;
+    },
+    false,
+  );
+}
+
+export function useFeeds(reflect: Reflect<Mutators>): Feed[] | null {
+  const initialized = useInitialized(reflect);
   const feeds = useSubscribe(
     reflect,
     async (tx) => {
@@ -26,7 +45,7 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
         })
         .toArray()) as Feed[];
     },
-    [],
+    null,
   );
 
   useEffect(() => {
@@ -39,10 +58,10 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
       );
     };
 
-    if (feeds.length === 0) {
+    if (initialized && feeds == null) {
       doIt();
     }
-  }, [reflect.mutate, feeds.length]);
+  }, [feeds, initialized, reflect.mutate]);
 
   return feeds;
 }
@@ -63,8 +82,9 @@ export function useFeedById(
 export function useEpisodesForFeed(
   reflect: Reflect<Mutators>,
   feedId: Feed['id'] | null,
-): Episode[] {
-  return useSubscribe(
+): Episode[] | null {
+  const initialized = useInitialized(reflect);
+  const episodes = useSubscribe(
     reflect,
     async (tx) => {
       if (feedId == null) {
@@ -82,6 +102,30 @@ export function useEpisodesForFeed(
       }));
       return list as Episode[];
     },
-    [] as Episode[],
+    null,
   );
+
+  // Fetch new episodes that aren't in the cache yet.
+  useEffect(() => {
+    const doIt = async () => {
+      try {
+        const [podcast, episodes] = await Promise.all([
+          podcastById(feedId),
+          episodesByPodcastId(feedId),
+        ]);
+        await Promise.all([
+          reflect.mutate.addFeed(podcast),
+          reflect.mutate.addEpisodesForFeed(episodes),
+        ]);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    if (initialized && episodes == null) {
+      doIt();
+    }
+  }, [episodes, feedId, initialized, reflect.mutate]);
+
+  return episodes;
 }

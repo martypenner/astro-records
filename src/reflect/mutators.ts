@@ -16,15 +16,22 @@
 // thing. The Reflect sync protocol ensures that the server-side result takes
 // precedence over the client-side optimistic result.
 
+import type { Episode, Feed } from '@/data';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
 
 export const mutators = {
+  initialize,
   addFeed,
   addFeeds,
   addEpisodesForFeed,
 } satisfies MutatorDefs;
 
 export type Mutators = typeof mutators;
+
+async function initialize(tx: WriteTransaction) {
+  console.log('Initializing');
+  await tx.set(`/init`, true);
+}
 
 async function addFeed(tx: WriteTransaction, feed: Feed) {
   console.log('Storing feed: ', feed);

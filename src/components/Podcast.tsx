@@ -1,9 +1,8 @@
 import type { Feed } from '@/data';
 import { r } from '@/reflect';
 import { useEpisodesForFeed, useFeedById } from '@/reflect/subscriptions';
-import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
-import { useEffect, type CSSProperties } from 'react';
+import { type CSSProperties } from 'react';
 import { $currentEpisode, $isPlaying } from '../services/state';
 import EpisodeList from './EpisodeList';
 import PlayButton from './PlayButton';
@@ -19,26 +18,6 @@ export default function Podcast({ id }: { id: Feed['id'] }) {
 
   const feed = useFeedById(r, id);
   const episodes = useEpisodesForFeed(r, id);
-
-  // Fetch new podcasts that aren't in the cache yet.
-  useEffect(() => {
-    const doIt = async () => {
-      try {
-        const podcast = await podcastById(id.toString());
-        const episodes = await episodesByPodcastId(podcast.id);
-        await Promise.all([
-          r.mutate.addFeed(podcast),
-          r.mutate.addEpisodesForFeed(episodes),
-        ]);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    if (feed == null) {
-      doIt();
-    }
-  }, [id, feed]);
 
   if (feed == null) {
     return <title>Loading feed... - Astro Podcasts</title>;
