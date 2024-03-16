@@ -1,11 +1,14 @@
 import { r } from '@/reflect';
 import { useInitialized } from '@/reflect/subscriptions';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
-export default function Guard({ children }: { children: ReactNode }) {
+export function Guard({ children }: { children: ReactNode }) {
   const initialized = useInitialized(r);
+  useEffect(() => {
+    r.mutate.initialize();
+  }, []);
 
-  if (!initialized) {
+  if (initialized == null || !initialized) {
     return null;
   }
 

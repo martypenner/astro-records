@@ -7,7 +7,5 @@ const { id } = Astro.params;
 ---
 
 <Layout>
-  <Guard client:only>
-    <Podcast client:only id={id} />
-  </Guard>
+  <Podcast client:only id={id} />
 </Layout>

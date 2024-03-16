@@ -3,6 +3,7 @@ import { r } from '@/reflect';
 import { useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
 import { $currentEpisode, $isPlaying, playEpisode } from '../services/state';
+import { Guard } from './Guard';
 
 type Props = {
   podcastId: Feed['id'];
@@ -15,7 +16,7 @@ export default function EpisodeList({ podcastId }: Props) {
   const episodes = useEpisodesForFeed(r, podcastId);
 
   return (
-    <>
+    <Guard>
       <ul className="text-xl" aria-label="Tracklist">
         {episodes.map((episode) => {
           const isCurrentEpisode = episode.id == currentEpisode?.id;
@@ -53,6 +54,6 @@ export default function EpisodeList({ podcastId }: Props) {
           );
         })}
       </ul>
-    </>
+    </Guard>
   );
 }

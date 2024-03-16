@@ -25,10 +25,7 @@ export function useInitialized(reflect: Reflect<Mutators>): boolean {
     reflect,
     async (tx) => {
       const initialized = await tx.get<true>('/init');
-      if (!initialized) {
-        await reflect.mutate.initialize();
-      }
-      return true;
+      return initialized;
     },
     false,
   );
@@ -46,7 +43,7 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
         })
         .toArray()) as Feed[];
     },
-    null,
+    [],
   );
 
   useEffect(() => {
@@ -59,10 +56,11 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
       );
     };
 
-    if (initialized && feeds == null) {
+    if (initialized && feeds.length === 0) {
       doIt();
     }
-  }, [feeds, initialized, reflect.mutate]);
+  }, [feeds.length, initialized, reflect.mutate]);
+  console.log(feeds);
 
   return feeds ?? [];
 }

@@ -1,12 +1,13 @@
 import { r } from '@/reflect';
 import { useFeeds } from '@/reflect/subscriptions';
 import { Card } from './Card';
+import { Guard } from './Guard';
 
 export function FeedList() {
   const feeds = useFeeds(r);
 
   return (
-    <>
+    <Guard>
       <title>Astro Podcasts</title>
 
       <section className="py-8">
@@ -22,6 +23,6 @@ export function FeedList() {
           </div>
         </div>
       </section>
-    </>
+    </Guard>
   );
 }

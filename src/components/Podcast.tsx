@@ -5,11 +5,13 @@ import { useStore } from '@nanostores/react';
 import { type CSSProperties } from 'react';
 import { $currentEpisode, $isPlaying } from '../services/state';
 import EpisodeList from './EpisodeList';
+import { Guard } from './Guard';
 import PlayButton from './PlayButton';
 
 export default function Podcast({ id }: { id: Feed['id'] }) {
   const currentEpisode = useStore($currentEpisode);
   const isPlaying = useStore($isPlaying);
+  console.log('hihih');
 
   const isPlayingCurrent = isPlaying && currentEpisode.id === id;
   const className =
@@ -18,13 +20,14 @@ export default function Podcast({ id }: { id: Feed['id'] }) {
 
   const feed = useFeedById(r, id);
   const episodes = useEpisodesForFeed(r, id);
+  console.log(episodes);
 
   if (feed == null) {
     return <title>Loading feed... - Astro Podcasts</title>;
   }
 
   return (
-    <>
+    <Guard>
       <title>
         {feed.title} by {feed.author} - Astro Podcasts
       </title>
@@ -91,6 +94,6 @@ export default function Podcast({ id }: { id: Feed['id'] }) {
           <EpisodeList podcastId={id} />
         </div>
       </section>
-    </>
+    </Guard>
   );
 }
