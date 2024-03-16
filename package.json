@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "preview": "wrangler pages dev ./dist",
     "deploy": "reflect publish --app=podcaster",
+    "usage": "reflect usage --app=podcaster",
     "astro": "astro",
     "prepare": "husky"
   },
