@@ -5,7 +5,6 @@ import Podcast from '@/components/Podcast';
 const { id } = Astro.params;
 ---
 
-<!-- TODO: fetch this in component and update page title --><!-- <Layout title={`${podcast.title} by ${podcast.author} - Astro Podcasts`}> -->
-<Layout title={'testing'}>
+<Layout>
   <Podcast client:only id={id} />
 </Layout>
