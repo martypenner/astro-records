@@ -1,8 +1,12 @@
 import type { ApiEpisode, Episode, Feed } from '@/data';
+import { env } from '@/env';
 import pRetry from 'p-retry';
 
-const apiKey = import.meta.env.PUBLIC_PODCAST_INDEX_API_KEY;
-const apiSecret = import.meta.env.PUBLIC_PODCAST_INDEX_API_SECRET;
+const {
+  VITE_PODCAST_INDEX_API_KEY: apiKey,
+  VITE_PODCAST_INDEX_API_SECRET: apiSecret,
+} = env;
+
 const baseUrl = new URL('https://api.podcastindex.org/api/1.0');
 
 async function createHash(
@@ -117,7 +121,7 @@ export const episodesByPodcastId = retryable(
       description: episode.description,
       author: episode.author,
       image:
-        episode.image.trim().length === 0
+        episode.image?.trim().length === 0
           ? episode.feedImage
           : episode.image == null
             ? episode.feedImage

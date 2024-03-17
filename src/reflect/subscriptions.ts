@@ -24,7 +24,17 @@ export function useInitialized(reflect: Reflect<Mutators>): boolean {
   const initialized = useSubscribe(
     reflect,
     async (tx) => {
-      const initialized = await tx.get<true>('/init');
+      const initialized = await tx.get<boolean>('/init');
+      await tx
+        .scan({
+          prefix: 'feed/',
+        })
+        .toArray();
+
+      if (!initialized) {
+        // Don't await this in order to make this subscription reactive.
+        reflect.mutate.initialize();
+      }
       return initialized;
     },
     false,
@@ -45,12 +55,14 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
     },
     [],
   );
+  console.log(feeds);
 
   useEffect(() => {
     const doIt = async () => {
       const feeds = await trending();
-      await reflect.mutate.addFeeds(
+      reflect.mutate.addFeeds(
         feeds.map((feed) =>
+          // Fixing a bug in podcast API by ensuring we parse JSON for occasional JSON strings
           typeof feed === 'string' ? JSON.parse(feed) : feed,
         ),
       );
@@ -60,9 +72,8 @@ export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
       doIt();
     }
   }, [feeds.length, initialized, reflect.mutate]);
-  console.log(feeds);
 
-  return feeds ?? [];
+  return feeds;
 }
 
 export function useFeedById(
@@ -80,7 +91,7 @@ export function useFeedById(
 
 export function useEpisodesForFeed(
   reflect: Reflect<Mutators>,
-  feedId: Feed['id'] | null,
+  feedId: Feed['id'],
 ): Episode[] {
   const initialized = useInitialized(reflect);
   const episodes = useSubscribe(
@@ -97,8 +108,9 @@ export function useEpisodesForFeed(
       }));
       return list as Episode[];
     },
-    null,
+    [],
   );
+  console.log(episodes);
 
   // Fetch new episodes that aren't in the cache yet.
   useEffect(() => {
@@ -117,7 +129,7 @@ export function useEpisodesForFeed(
       }
     };
 
-    if (initialized && episodes == null) {
+    if (initialized && episodes.length === 0) {
       doIt();
     }
   }, [episodes, feedId, initialized, reflect.mutate]);

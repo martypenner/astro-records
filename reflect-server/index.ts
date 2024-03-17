@@ -1,8 +1,8 @@
+import { mutators, type Mutators } from '@/reflect/mutators';
 import type {
   AuthHandler,
   ReflectServerOptions,
 } from '@rocicorp/reflect/server';
-import { type Mutators, mutators } from '../src/reflect/mutators';
 
 const authHandler: AuthHandler = (auth: string, _roomID: string) => {
   if (auth) {

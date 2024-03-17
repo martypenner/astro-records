@@ -1,13 +1,14 @@
 import type { Episode } from '@/data';
-import { useStore } from '@nanostores/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import {
   $currentEpisode,
   $isPlaying,
   pause,
   togglePlay,
-} from '../services/state';
+} from '@/services/state';
+import { useStore } from '@nanostores/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
+import { NavLink } from 'react-router-dom';
 
 export default function PlayerGuard() {
   const currentEpisode = useStore($currentEpisode);
@@ -60,25 +61,29 @@ function Player({ feedId, author, title, image }: PlayerProps) {
   const currentEpisode = useStore($currentEpisode);
 
   const audioPlayer = useRef<HTMLAudioElement>(null);
-  const progressRef = useRef(null);
+  const progressRef = useRef<number | null>(null);
   const [progress, setProgress] = useState(0);
 
   const updatePlayProgress = useCallback(() => {
-    if (audioPlayer.current.duration) {
+    if (audioPlayer.current?.duration) {
       const percentage =
         (audioPlayer.current.currentTime / audioPlayer.current.duration) * 100;
       setProgress(percentage);
     }
-    progressRef.current = requestAnimationFrame(updatePlayProgress);
+    if (progressRef.current) {
+      progressRef.current = requestAnimationFrame(updatePlayProgress);
+    }
   }, []);
 
   // When the current episode's enclosure URL changes - the actual audio file URL - reset play progress.
   useEffect(() => {
     setProgress(0);
+    if (!audioPlayer.current || currentEpisode?.enclosureUrl == null) return;
+
     audioPlayer.current.src = currentEpisode.enclosureUrl.toString();
     audioPlayer.current.currentTime = 0;
     audioPlayer.current?.play();
-  }, [currentEpisode.enclosureUrl]);
+  }, [currentEpisode?.enclosureUrl]);
 
   // This syncs the store play state with the audio player element.
   useEffect(() => {
@@ -87,7 +92,9 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       updatePlayProgress();
     } else {
       audioPlayer.current?.pause();
-      cancelAnimationFrame(progressRef.current);
+      if (progressRef.current) {
+        cancelAnimationFrame(progressRef.current);
+      }
     }
   }, [isPlaying, updatePlayProgress]);
 
@@ -120,6 +127,8 @@ function Player({ feedId, author, title, image }: PlayerProps) {
           step={0.1}
           onChange={(progress: number) => {
             setProgress(progress);
+            if (!audioPlayer.current) return;
+
             audioPlayer.current.currentTime =
               (audioPlayer.current.duration * progress) / 100;
           }}
@@ -168,7 +177,11 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       </div>
       <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between gap-5">
         {/* TODO: maybe link to the episode instead? some sort of slide-in player? */}
-        <a href={`/podcast/${feedId}`} className="flex items-center gap-5">
+        <NavLink
+          unstable_viewTransition
+          to={`/podcast/${feedId}`}
+          className="flex items-center gap-5"
+        >
           <img
             src={image}
             // Decorative only
@@ -186,7 +199,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
               {author}
             </div>
           </div>
-        </a>
+        </NavLink>
         <audio ref={audioPlayer} />
         <div className="flex gap-6 items-center text-black">
           <button

@@ -1,11 +1,13 @@
 .vynil-animation-in {
   animation: appear 600ms ease-in-out 300ms forwards;
 }
+
 .vynil-animation-in-spinning {
   animation:
     appear 600ms ease-in-out 300ms forwards,
     spin 5s linear infinite;
 }
+
 .vynil-animation-out {
   animation: disappear 300ms ease-in-out forwards;
 }
@@ -18,6 +20,7 @@
     transform: rotate(360deg);
   }
 }
+
 @keyframes appear {
   0% {
     left: 0;
@@ -46,15 +49,38 @@
   }
 }
 
-::view-transition-group(header),
-::view-transition-group(player) {
-  z-index: 10;
+.transitioning [data-podcast-expand] {
+  view-transition-name: podcast-expand;
 }
 
-::view-transition-old(header),
-::view-transition-new(header),
-::view-transition-old(player),
-::view-transition-new(player) {
+::view-transition-old(podcast-expand):not(:only-child),
+::view-transition-new(podcast-expand):not(:only-child) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+.transitioning [data-vinyl-expand] {
+  view-transition-name: vinyl-expand;
+}
+
+::view-transition-old(vinyl-expand):not(:only-child),
+::view-transition-new(vinyl-expand):not(:only-child) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(player) {
+  display: none;
+}
+
+::view-transition-new(player) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

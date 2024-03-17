@@ -1,13 +1,6 @@
 /** @type {import("prettier").Config} */
 export default {
-  plugins: ['prettier-plugin-astro'],
+  plugins: [],
   singleQuote: true,
-  overrides: [
-    {
-      files: '*.astro',
-      options: {
-        parser: 'astro',
-      },
-    },
-  ],
+  overrides: [],
 };
