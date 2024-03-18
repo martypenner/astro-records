@@ -13,6 +13,11 @@ export function pause() {
 }
 
 export function playEpisode(episode: Episode) {
+  if (episode.enclosureType.startsWith('video/')) {
+    console.log('skipping video play for episode:', episode);
+    return;
+  }
+
   $isPlaying.set(
     episode.id === $currentEpisode.get()?.id ? !$isPlaying.get() : true,
   );

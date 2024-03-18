@@ -1,7 +1,8 @@
-import type { Feed } from '@/data';
+import type { Episode, Feed } from '@/data';
 import { r } from '@/reflect';
 import { useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
+import { ReactNode, useMemo } from 'react';
 import { $currentEpisode, $isPlaying, playEpisode } from '../services/state';
 
 type Props = {
@@ -14,6 +15,33 @@ export default function EpisodeList({ podcastId }: Props) {
 
   const episodes = useEpisodesForFeed(r, podcastId);
 
+  const Wrapper = useMemo(() => {
+    return ({
+      episode,
+      isCurrentEpisode,
+      children,
+    }: {
+      episode: Episode;
+      isCurrentEpisode: boolean;
+      children: ReactNode;
+    }) =>
+      // Videos can't be played here
+      episode.enclosureType.startsWith('video/') ? (
+        <div className="focus-visible:ring-2 px-6 py-4 flex basis grow w-full items-center">
+          {children}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="hover:bg-gray-50 focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center"
+          aria-current={isCurrentEpisode}
+          onClick={() => playEpisode(episode)}
+        >
+          {children}
+        </button>
+      );
+  }, []);
+
   return (
     <ul className="text-xl" aria-label="Tracklist">
       {episodes.map((episode) => {
@@ -21,12 +49,7 @@ export default function EpisodeList({ podcastId }: Props) {
 
         return (
           <li key={episode.id} className="first:border-t border-b">
-            <button
-              type="button"
-              className="hover:bg-gray-50 focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center"
-              aria-current={isCurrentEpisode}
-              onClick={() => playEpisode(episode)}
-            >
+            <Wrapper episode={episode} isCurrentEpisode={isCurrentEpisode}>
               <div className="flex basis grow w-full items-center gap-4">
                 <span className="font-normal text-md">{episode.episode}</span>
                 <div className="flex flex-col justify-start items-start">
@@ -44,7 +67,7 @@ export default function EpisodeList({ podcastId }: Props) {
                   (press to {isCurrentEpisode && isPlaying ? 'pause)' : 'play)'}
                 </span>
               </div>
-            </button>
+            </Wrapper>
           </li>
         );
       })}
