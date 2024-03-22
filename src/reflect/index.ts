@@ -1,9 +1,8 @@
 import { Reflect } from '@rocicorp/reflect/client';
-import { nanoid } from 'nanoid';
 import { mutators } from './mutators';
 
 const server = import.meta.env.VITE_REFLECT_URL;
-const userID = nanoid();
+const userID = 'testing';
 
 export const r = new Reflect({
   server,
