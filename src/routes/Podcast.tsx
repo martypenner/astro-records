@@ -1,11 +1,38 @@
 import EpisodeList from '@/components/EpisodeList';
 import PlayButton from '@/components/PlayButton';
 import { r } from '@/reflect';
-import { useEpisodesForFeed, useFeedById } from '@/reflect/subscriptions';
+import {
+  listEpisodesForFeed,
+  useEpisodesForFeed,
+  useFeedById,
+} from '@/reflect/subscriptions';
+import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
-import { useParams } from 'react-router-dom';
-import { $currentEpisode, $isPlaying } from '../services/state';
+import { LoaderFunctionArgs, useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
+import { $currentEpisode, $isPlaying } from '../services/state';
+
+export async function loader({ params }: LoaderFunctionArgs) {
+  const { id: feedId = '' } = params;
+  // Fetch new episodes that aren't in the cache yet.
+  const episodes = await r.query((tx) => listEpisodesForFeed(tx, feedId));
+  if (episodes.length === 0) {
+    try {
+      // don't await this; let the UI render right away
+      Promise.all([podcastById(feedId), episodesByPodcastId(feedId)]).then(
+        ([podcast, episodes]) =>
+          Promise.all([
+            r.mutate.addFeed(podcast),
+            r.mutate.addEpisodesForFeed(episodes),
+          ]),
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return episodes;
+}
 
 export function Component() {
   const { id } = useParams();

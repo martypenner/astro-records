@@ -10,129 +10,57 @@
 // changes. The subscription "fires" when the result of the query changes.
 
 import type { Episode, Feed, StoredEpisode } from '@/data';
-import {
-  episodesByPodcastId,
-  podcastById,
-  trending,
-} from '@/services/podcast-api';
+import { generate } from '@rocicorp/rails';
+import type { ReadTransaction } from '@rocicorp/reflect';
 import type { Reflect } from '@rocicorp/reflect/client';
 import { useSubscribe } from '@rocicorp/reflect/react';
-import { useEffect } from 'react';
 import type { Mutators } from './mutators';
 
-export function useInitialized(reflect: Reflect<Mutators>): boolean {
-  const initialized = useSubscribe(
-    reflect,
-    async (tx) => {
-      const initialized = await tx.get<boolean>('/init');
-      await tx
-        .scan({
-          prefix: 'feed/',
-        })
-        .toArray();
-
-      if (!initialized) {
-        // Don't await this in order to make this subscription reactive.
-        reflect.mutate.initialize();
-      }
-      return initialized;
-    },
-    false,
-  );
-  return initialized;
-}
+export const {
+  get: getFeed,
+  set: setFeed,
+  update: updateFeed,
+  delete: deleteFeed,
+  list: listFeeds,
+  listIDs: listFeedIds,
+} = generate<Feed>('feed');
 
 export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
-  const initialized = useInitialized(reflect);
-  const feeds = useSubscribe(
-    reflect,
-    async (tx) => {
-      return (await tx
-        .scan({
-          prefix: 'feed/',
-        })
-        .toArray()) as Feed[];
-    },
-    [],
-  );
-  console.log(feeds);
-
-  useEffect(() => {
-    const doIt = async () => {
-      const feeds = await trending();
-      reflect.mutate.addFeeds(
-        feeds.map((feed) =>
-          // Fixing a bug in podcast API by ensuring we parse JSON for occasional JSON strings
-          typeof feed === 'string' ? JSON.parse(feed) : feed,
-        ),
-      );
-    };
-
-    if (initialized && feeds.length === 0) {
-      doIt();
-    }
-  }, [feeds.length, initialized, reflect.mutate]);
-
-  return feeds;
+  return useSubscribe(reflect, listFeeds, []);
 }
 
 export function useFeedById(
   reflect: Reflect<Mutators>,
   key: Feed['id'],
 ): Feed | null {
-  return useSubscribe(
-    reflect,
-    async (tx) => {
-      return (await tx.get(`feed/${key}`)) as Feed | null;
-    },
-    null,
-  );
+  return useSubscribe(reflect, (tx) => getFeed(tx, key), null);
+}
+
+export async function listEpisodesForFeed(
+  tx: ReadTransaction,
+  feedId: Feed['id'],
+) {
+  const list = (
+    (await tx
+      .scan({ prefix: `episode/${feedId}/` })
+      .toArray()) as StoredEpisode[]
+  ).map((episode) => ({
+    ...episode,
+    datePublished: new Date(episode.datePublished),
+    explicit: !!episode.explicit,
+  }));
+  return list as Episode[];
 }
 
 export function useEpisodesForFeed(
   reflect: Reflect<Mutators>,
   feedId: Feed['id'],
 ): Episode[] {
-  const initialized = useInitialized(reflect);
   const episodes = useSubscribe(
     reflect,
-    async (tx) => {
-      const list = (
-        (await tx
-          .scan({ prefix: `episode/${feedId}/` })
-          .toArray()) as StoredEpisode[]
-      ).map((episode) => ({
-        ...episode,
-        datePublished: new Date(episode.datePublished),
-        explicit: !!episode.explicit,
-      }));
-      return list as Episode[];
-    },
+    (tx) => listEpisodesForFeed(tx, feedId),
     [],
   );
-  console.log(episodes);
 
-  // Fetch new episodes that aren't in the cache yet.
-  useEffect(() => {
-    const doIt = async () => {
-      try {
-        const [podcast, episodes] = await Promise.all([
-          podcastById(feedId),
-          episodesByPodcastId(feedId),
-        ]);
-        await Promise.all([
-          reflect.mutate.addFeed(podcast),
-          reflect.mutate.addEpisodesForFeed(episodes),
-        ]);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    if (initialized && episodes.length === 0) {
-      doIt();
-    }
-  }, [episodes, feedId, initialized, reflect.mutate]);
-
-  return episodes ?? [];
+  return episodes;
 }

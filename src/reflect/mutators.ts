@@ -39,7 +39,15 @@ async function addFeed(tx: WriteTransaction, feed: Feed) {
 }
 
 async function addFeeds(tx: WriteTransaction, feeds: Feed[]) {
-  await Promise.all(feeds.map((feed) => addFeed(tx, feed)));
+  await Promise.all(
+    feeds.map((feed) =>
+      addFeed(
+        tx,
+        // Fixing a bug in podcast API by ensuring we parse JSON for occasional JSON strings
+        typeof feed === 'string' ? JSON.parse(feed) : feed,
+      ),
+    ),
+  );
 }
 
 async function addEpisodesForFeed(tx: WriteTransaction, episodes: Episode[]) {
