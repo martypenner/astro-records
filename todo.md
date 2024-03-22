@@ -14,3 +14,4 @@
 - [ ] ensure uniform aspect ratio of podcast and episode images
 - [ ] figure out how to delay initial renders and effects that kick off requests until replicache is hydrated
 - [ ] page titles
+- [ ] figure out when to fetch latest feeds and episodes
