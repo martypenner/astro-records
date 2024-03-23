@@ -87,8 +87,9 @@ export function Component() {
           </h1>
           <div className="mt-2 text-lg">{feed.description}</div>
           <div className="mt-3 flex">
-            {/* TODO: use currently playing episode instead of first, or first if none exists */}
-            {episodes.length > 0 && <PlayButton episode={episodes[0]} />}
+            {episodes.length > 0 && (
+              <PlayButton episode={currentEpisode ?? episodes[0]} />
+            )}
 
             {/* <svg */}
             {/*   className="w-6 h-6 mr-2 -ml-1 text-pink-600" */}
