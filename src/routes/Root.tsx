@@ -1,24 +1,7 @@
 import Player from '@/components/Player';
-import { r } from '@/reflect';
-import { useEffect, useState } from 'react';
 import { NavLink, Outlet, ScrollRestoration } from 'react-router-dom';
 
-const getIsInitialized = new Promise((res) => {
-  r.query((tx) => res(tx.get('/init')));
-});
-
 export function Component() {
-  const [initialized, setIsInitialized] = useState(false);
-  useEffect(() => {
-    getIsInitialized.then(() => {
-      setIsInitialized(true);
-    });
-  }, []);
-
-  if (!initialized) {
-    return null;
-  }
-
   return (
     // TODO: fade in
     <div className="wrapper flex flex-col h-screen">
