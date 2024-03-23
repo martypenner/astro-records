@@ -87,29 +87,23 @@ export function Component() {
           </h1>
           <div className="mt-2 text-lg">{feed.description}</div>
           <div className="mt-3 flex">
-            {episodes.length > 0 && <PlayButton />}
+            {/* TODO: use currently playing episode instead of first, or first if none exists */}
+            {episodes.length > 0 && <PlayButton episode={episodes[0]} />}
 
-            <button
-              disabled
-              type="button"
-              className="opacity-50 text-pink-600 bg-gray-100 font-medium rounded-lg text-lg px-10 py-3 text-center inline-flex items-center dark:focus:ring-gray-500 mr-4"
-            >
-              <svg
-                className="w-6 h-6 mr-2 -ml-1 text-pink-600"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-                  clipRule="evenodd"
-                ></path>
-              </svg>
-              Shuffle
-            </button>
+            {/* <svg */}
+            {/*   className="w-6 h-6 mr-2 -ml-1 text-pink-600" */}
+            {/*   fill="currentColor" */}
+            {/*   viewBox="0 0 20 20" */}
+            {/*   xmlns="http://www.w3.org/2000/svg" */}
+            {/*   aria-hidden="true" */}
+            {/*   focusable="false" */}
+            {/* > */}
+            {/*   <path */}
+            {/*     fillRule="evenodd" */}
+            {/*     d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" */}
+            {/*     clipRule="evenodd" */}
+            {/*   ></path> */}
+            {/* </svg> */}
 
             <button
               type="button"

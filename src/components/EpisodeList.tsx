@@ -33,7 +33,7 @@ export default function EpisodeList({ podcastId }: Props) {
       ) : (
         <button
           type="button"
-          className="hover:bg-gray-50 focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center"
+          className={`hover:bg-gray-200 ${isCurrentEpisode ? 'bg-pink-200' : ''} focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center`}
           aria-current={isCurrentEpisode}
           onClick={() => playEpisode(episode)}
         >
@@ -43,7 +43,7 @@ export default function EpisodeList({ podcastId }: Props) {
   }, []);
 
   return (
-    <ul className="text-xl" aria-label="Tracklist">
+    <ul className="text-xl" aria-label="Episode list">
       {episodes.map((episode) => {
         const isCurrentEpisode = episode.id == currentEpisode?.id;
 
