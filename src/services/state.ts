@@ -1,16 +1,13 @@
 import { type Episode } from '@/data';
+import { r } from '@/reflect';
+import { getCurrentEpisode } from '@/reflect/state';
 import { atom } from 'nanostores';
 
 export const $isPlaying = atom(false);
-export const $currentEpisode = atom<Episode | null>(null);
 export const $showSearchedFeeds = atom<boolean>(false);
 
-export function togglePlay() {
+export function togglePlaying() {
   $isPlaying.set(!$isPlaying.get());
-}
-
-export function pause() {
-  $isPlaying.set(false);
 }
 
 export function playEpisode(episode: Episode) {
@@ -19,10 +16,13 @@ export function playEpisode(episode: Episode) {
     return;
   }
 
-  $isPlaying.set(
-    episode.id === $currentEpisode.get()?.id ? !$isPlaying.get() : true,
-  );
-  $currentEpisode.set(episode);
+  r.query(async (tx) => {
+    const currentEpisode = await getCurrentEpisode(tx);
+    $isPlaying.set(
+      episode.id === currentEpisode?.id ? !$isPlaying.get() : true,
+    );
+    r.mutate.setCurrentEpisode(episode.id);
+  });
 }
 
 export function setShowSearchedFeeds(show: boolean) {

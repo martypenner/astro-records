@@ -1,18 +1,17 @@
 import type { Episode, Feed } from '@/data';
 import { r } from '@/reflect';
-import { useEpisodesForFeed } from '@/reflect/subscriptions';
+import { useCurrentEpisode, useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
 import { ReactNode, useMemo } from 'react';
-import { $currentEpisode, $isPlaying, playEpisode } from '../services/state';
+import { $isPlaying, playEpisode } from '../services/state';
 
 type Props = {
   podcastId: Feed['id'];
 };
 
 export default function EpisodeList({ podcastId }: Props) {
-  const currentEpisode = useStore($currentEpisode);
+  const currentEpisode = useCurrentEpisode(r);
   const isPlaying = useStore($isPlaying);
-
   const episodes = useEpisodesForFeed(r, podcastId);
 
   const Wrapper = useMemo(() => {

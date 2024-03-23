@@ -17,6 +17,7 @@
 // precedence over the client-side optimistic result.
 
 import type { ApiEpisode, Episode, Feed, StoredEpisode } from '@/data';
+import { formatDuration } from '@/services/format-duration';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
 import { mustGetFeed, setFeed, updateFeed } from './state';
 
@@ -25,6 +26,7 @@ export const mutators = {
   addFeeds,
   subscribeToFeed,
   unsubscribeFromFeed,
+  setCurrentEpisode,
   addEpisodesForFeed,
   updateProgressForEpisode,
 } satisfies MutatorDefs;
@@ -78,38 +80,45 @@ async function addEpisodesForFeed(
   const episodes = rawEpisodes.map((episode) => ({
     ...episode,
     datePublished: new Date(episode.datePublished).toISOString(),
+    durationFormatted: formatDuration(episode.duration),
     explicit: episode.explicit === 1,
     progress: 0,
   }));
   console.debug('Storing episodes: ', episodes);
   await Promise.all(
     episodes.map(
-      async (episode) =>
-        await tx.set(`episode/${episode.feedId}/${episode.id}`, episode),
+      async (episode) => await tx.set(`episode/${episode.id}`, episode),
     ),
   );
+}
+
+export async function setCurrentEpisode(
+  tx: WriteTransaction,
+  id: Episode['id'],
+) {
+  console.log('Setting current episode:', id);
+  await tx.set(`/current-episode-id`, id);
 }
 
 async function updateProgressForEpisode(
   tx: WriteTransaction,
   {
     id,
-    feedId,
     progress,
+    played = false,
   }: {
     id: Episode['id'];
-    feedId: Feed['id'];
     progress: number;
+    played?: boolean;
   },
 ) {
-  console.debug('Updating progress for feed and episode:', feedId, id);
-  const storedEpisode = (await tx.get(
-    `episode/${feedId}/${id}`,
-  )) as StoredEpisode;
+  console.debug('Updating progress for episode:', id, progress, played);
+  const storedEpisode = (await tx.get(`episode/${id}`)) as StoredEpisode;
   if (storedEpisode) {
-    tx.set(`episode/${feedId}/${id}`, {
+    await tx.set(`episode/${id}`, {
       ...storedEpisode,
       progress,
+      played,
     });
   }
 }

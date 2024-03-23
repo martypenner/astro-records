@@ -1,18 +1,16 @@
 import type { Episode } from '@/data';
 import { r } from '@/reflect';
-import {
-  $currentEpisode,
-  $isPlaying,
-  pause,
-  togglePlay,
-} from '@/services/state';
+import { useCurrentEpisode } from '@/reflect/subscriptions';
+import { formatDuration } from '@/services/format-duration';
+import { $isPlaying, togglePlaying } from '@/services/state';
 import { useStore } from '@nanostores/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import { NavLink } from 'react-router-dom';
 
 export default function PlayerGuard() {
-  const currentEpisode = useStore($currentEpisode);
+  const currentEpisode = useCurrentEpisode(r);
 
   if (currentEpisode == null) {
     return;
@@ -59,58 +57,95 @@ type PlayerProps = Pick<Episode, 'feedId' | 'author' | 'title' | 'image'>;
 
 function Player({ feedId, author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
-  const currentEpisode = useStore($currentEpisode);
-
+  const currentEpisode = useCurrentEpisode(r);
   const audioPlayer = useRef<HTMLAudioElement>(null);
-  const progressRef = useRef<number | null>(null);
-  const [progress, setProgress] = useState(0);
+  const [progress, setProgress] = useState(currentEpisode?.progress ?? 0);
 
-  const updatePlayProgress = useCallback(() => {
-    if (audioPlayer.current?.duration && currentEpisode?.id) {
-      const percentage =
-        (audioPlayer.current.currentTime / audioPlayer.current.duration) * 100;
-      setProgress(percentage);
+  // Sync updates from the player to local progress - to update the slider - and
+  // persist progress per episode.
+  useEffect(() => {
+    const audio = audioPlayer.current;
+    if (!audio) return;
+
+    const localUpdateInterval = 100;
+    const persistedUpdateInterval = 4000;
+    let lastUpdatedLocalTime = Date.now();
+    let lastUpdatedPersistedTime = Date.now();
+    const handleTimeUpdate = () => {
+      if (!currentEpisode?.id) return;
+      const now = Date.now();
+      const currentTime = audio.currentTime;
+      // Throttle updates to every 1 second
+      if (now - lastUpdatedLocalTime >= localUpdateInterval) {
+        lastUpdatedLocalTime = Date.now();
+        setProgress(Math.min(currentTime, audio.duration));
+      }
+      // Persist changes even less frequently
+      if (now - lastUpdatedPersistedTime >= persistedUpdateInterval) {
+        lastUpdatedPersistedTime = Date.now();
+        r.mutate.updateProgressForEpisode({
+          id: currentEpisode.id,
+          progress: Math.min(currentTime, audio.duration),
+        });
+      }
+    };
+    const handleEnded = () => {
+      setProgress(0);
+      if (!currentEpisode?.id) return;
       r.mutate.updateProgressForEpisode({
         id: currentEpisode.id,
-        feedId,
-        progress: percentage,
+        progress: 0,
+        played: true,
       });
-    }
-    if (progressRef.current) {
-      progressRef.current = requestAnimationFrame(updatePlayProgress);
-    }
-  }, [currentEpisode?.id, feedId]);
+    };
 
-  // When the current episode's enclosure URL changes - the actual audio file URL - reset play progress.
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentEpisode?.id]);
+
+  // When the store playing state changes - e.g. when controlling it using a
+  // different play / pause button - update the player playing state.
   useEffect(() => {
-    setProgress(0);
-    if (!audioPlayer.current || currentEpisode?.enclosureUrl == null) return;
+    const audio = audioPlayer.current;
+    if (!audio) return;
 
-    audioPlayer.current.src = currentEpisode.enclosureUrl.toString();
-    audioPlayer.current.currentTime = 0;
-    audioPlayer.current?.play();
+    // Delay by a bit to let the audio player catch up
+    requestAnimationFrame(() => {
+      if (isPlaying) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    });
+  }, [isPlaying]);
+
+  // When the current episode changes, update the audio src to it and restore player progress.
+  useEffect(() => {
+    const audio = audioPlayer.current;
+    if (!audio || currentEpisode?.enclosureUrl == null) return;
+
+    audio.src = currentEpisode.enclosureUrl.toString();
+    audio.currentTime = currentEpisode.progress;
+    audio.play();
+    setProgress(currentEpisode.progress);
+
+    // We don't want to react to changes in episode progress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEpisode?.enclosureUrl]);
 
-  // This syncs the store play state with the audio player element.
+  // Update the progress tracker / slider if a mutation comes in while we're not playing.
+  // This is important so that the player picks up where it left off when you switch episodes.
   useEffect(() => {
-    if (isPlaying) {
-      audioPlayer.current?.play();
-      updatePlayProgress();
-    } else {
-      audioPlayer.current?.pause();
-      if (progressRef.current) {
-        cancelAnimationFrame(progressRef.current);
-      }
+    if (!isPlaying) {
+      if (currentEpisode?.progress == null) return;
+      setProgress(currentEpisode.progress);
     }
-  }, [isPlaying, updatePlayProgress]);
-
-  // Reset progress and pause once we hit the end of the episode.
-  useEffect(() => {
-    if (progress >= 99.99) {
-      pause();
-      setProgress(0);
-    }
-  }, [progress]);
+  }, [currentEpisode?.progress, isPlaying]);
 
   return (
     <div
@@ -123,20 +158,28 @@ function Player({ feedId, author, title, image }: PlayerProps) {
         Audio player
       </h2>
 
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 flex justify-center">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 flex justify-center">
+        <span className="text-gray-50">
+          {formatDuration(progress, true)} /{' '}
+          {currentEpisode?.durationFormatted ?? ''}
+        </span>
+
         <Slider
           aria-label="Audio timeline"
           className="w-full"
           value={progress}
           minValue={0}
-          maxValue={100}
+          // TODO: update this AS SOON AS the current episode changes
+          maxValue={
+            Number.isNaN(audioPlayer.current?.duration ?? 0)
+              ? 0
+              : audioPlayer.current?.duration
+          }
           step={0.1}
           onChange={(progress: number) => {
             setProgress(progress);
             if (!audioPlayer.current) return;
-
-            audioPlayer.current.currentTime =
-              (audioPlayer.current.duration * progress) / 100;
+            audioPlayer.current.currentTime = progress;
           }}
         >
           <SliderTrack className="relative w-full h-7">
@@ -149,44 +192,45 @@ function Player({ feedId, author, title, image }: PlayerProps) {
                   className="absolute h-2 top-[50%] translate-y-[-50%] rounded-full bg-white"
                   style={{ width: state.getThumbPercent(0) * 100 + '%' }}
                 />
-                <SliderThumb className="h-7 w-7 top-[50%] rounded-full border border-solid border-purple-800/75 bg-white transition dragging:bg-purple-100 outline-none focus-visible:ring-2 ring-black" />
+                <SliderThumb className="h-5 w-5 top-[50%] rounded-full border border-solid border-purple-800/75 bg-white transition dragging:bg-purple-100 outline-none focus-visible:ring-2 ring-black" />
               </>
             )}
           </SliderTrack>
         </Slider>
       </div>
 
-      <div className="flex-1 bg-gray-200 h-3 dark:bg-gray-700">
-        <div
-          aria-orientation="horizontal"
-          role="slider"
-          aria-label="audio timeline"
-          aria-valuemin={0}
-          aria-valuemax={
-            audioPlayer.current && audioPlayer.current.duration
-              ? Math.floor(audioPlayer.current.duration)
-              : 0
-          }
-          aria-valuenow={
-            audioPlayer.current && audioPlayer.current.currentTime
-              ? Math.floor(audioPlayer.current.currentTime)
-              : 0
-          }
-          aria-valuetext={`${
-            audioPlayer.current && audioPlayer.current.currentTime
-              ? Math.floor(audioPlayer.current.currentTime)
-              : 0
-          } seconds`}
-          className="bg-pink-700 h-full"
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
+      {/* <div className="flex-1 bg-gray-200 h-3 dark:bg-gray-700"> */}
+      {/*   <div */}
+      {/*     aria-orientation="horizontal" */}
+      {/*     role="slider" */}
+      {/*     aria-label="audio timeline" */}
+      {/*     aria-valuemin={0} */}
+      {/*     aria-valuemax={ */}
+      {/*       audioPlayer.current && audioPlayer.current.duration */}
+      {/*         ? Math.floor(audioPlayer.current.duration) */}
+      {/*         : 0 */}
+      {/*     } */}
+      {/*     aria-valuenow={ */}
+      {/*       audioPlayer.current && audioPlayer.current.currentTime */}
+      {/*         ? Math.floor(audioPlayer.current.currentTime) */}
+      {/*         : 0 */}
+      {/*     } */}
+      {/*     aria-valuetext={`${ */}
+      {/*       audioPlayer.current && audioPlayer.current.currentTime */}
+      {/*         ? Math.floor(audioPlayer.current.currentTime) */}
+      {/*         : 0 */}
+      {/*     } seconds`} */}
+      {/*     className="bg-pink-700 h-full" */}
+      {/*     style={{ width: `${progress}%` }} */}
+      {/*   ></div> */}
+      {/* </div> */}
+
       <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between gap-5">
         {/* TODO: maybe link to the episode instead? some sort of slide-in player? */}
         <NavLink
           unstable_viewTransition
           to={`/podcast/${feedId}`}
-          className="flex items-center gap-5"
+          className="flex items-center gap-5 shrink-0"
         >
           <img
             src={image}
@@ -206,8 +250,10 @@ function Player({ feedId, author, title, image }: PlayerProps) {
             </div>
           </div>
         </NavLink>
+
         <audio ref={audioPlayer} />
-        <div className="flex gap-6 items-center text-black">
+
+        <div className="flex gap-6 items-center shrink-0 text-black">
           <button
             type="button"
             disabled
@@ -229,7 +275,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
           <button
             type="button"
             className="focus-visible:ring-2 focus:outline-none focus:ring-black"
-            onClick={() => togglePlay()}
+            onClick={() => togglePlaying()}
           >
             {isPlaying ? PauseIcon : PlayIcon}
             <span className="sr-only">{isPlaying ? 'Pause' : 'Play'}</span>

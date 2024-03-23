@@ -9,34 +9,17 @@
 // subscription "query" is re-run whenever any of the data it depends on
 // changes. The subscription "fires" when the result of the query changes.
 
-import type { Episode, Feed, StoredEpisode } from '@/data';
-import type { ReadTransaction } from '@rocicorp/reflect';
+import type { Episode, Feed } from '@/data';
 import type { Reflect } from '@rocicorp/reflect/client';
 import { useSubscribe } from '@rocicorp/reflect/react';
 import type { Mutators } from './mutators';
-import { getFeed, listFeeds } from './state';
-
-export async function listAllFeeds(tx: ReadTransaction): Promise<Feed[]> {
-  const feeds = await listFeeds(tx);
-  return feeds;
-}
-
-export async function listSearchedFeeds(tx: ReadTransaction): Promise<Feed[]> {
-  const feeds = await listAllFeeds(tx);
-  return feeds.filter((feed) => feed._meta.fromSearch);
-}
-
-export async function listRegularFeeds(tx: ReadTransaction): Promise<Feed[]> {
-  const feeds = await listAllFeeds(tx);
-  return feeds.filter((feed) => !feed._meta.fromSearch);
-}
-
-export async function listSubscribedFeeds(
-  tx: ReadTransaction,
-): Promise<Feed[]> {
-  const feeds = await listAllFeeds(tx);
-  return feeds.filter((feed) => feed._meta.subscribed);
-}
+import {
+  getCurrentEpisode,
+  getFeed,
+  listEpisodesForFeed,
+  listRegularFeeds,
+  listSearchedFeeds,
+} from './state';
 
 export function useFeeds(
   reflect: Reflect<Mutators>,
@@ -56,24 +39,6 @@ export function useFeedById(
   return useSubscribe(reflect, (tx) => getFeed(tx, key), null);
 }
 
-export async function listEpisodesForFeed(
-  tx: ReadTransaction,
-  feedId: Feed['id'],
-): Promise<Episode[]> {
-  const list = (
-    (await tx
-      .scan({ prefix: `episode/${feedId}/` })
-      .toArray()) as StoredEpisode[]
-  )
-    .map((episode) => ({
-      ...episode,
-      explicit: !!episode.explicit,
-      durationFormatted: formatDuration(episode.duration),
-    }))
-    .sort((a, b) => b.datePublished.localeCompare(a.datePublished));
-  return list as Episode[];
-}
-
 export function useEpisodesForFeed(
   reflect: Reflect<Mutators>,
   feedId: Feed['id'],
@@ -87,9 +52,6 @@ export function useEpisodesForFeed(
   return episodes;
 }
 
-function formatDuration(duration: number): string {
-  const hours = Math.floor(duration / 3600);
-  const minutes = Math.floor((duration % 3600) / 60);
-  const seconds = duration % 60;
-  return `${hours === 0 ? '' : hours + ':'}${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+export function useCurrentEpisode(reflect: Reflect<Mutators>): Episode | null {
+  return useSubscribe(reflect, getCurrentEpisode, null);
 }

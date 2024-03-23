@@ -32,7 +32,6 @@ export interface ApiEpisode {
   feedImage?: string;
   datePublished: string;
   duration: number;
-  durationFormatted: string;
   /** The episode number within the broader feed, e.g. 605. */
   episode: number;
   enclosureUrl: string;
@@ -45,12 +44,13 @@ export interface ApiEpisode {
 }
 
 export interface StoredEpisode extends ApiEpisode {
+  durationFormatted: string;
+  explicit: boolean;
   progress: number;
 }
 
 export interface Episode extends StoredEpisode {
   enclosureType: MIMEType;
-  explicit: boolean;
 }
 
 // This should eventually be a union of all types we encounter.

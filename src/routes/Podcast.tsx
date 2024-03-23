@@ -1,8 +1,9 @@
 import EpisodeList from '@/components/EpisodeList';
 import PlayButton from '@/components/PlayButton';
 import { r } from '@/reflect';
+import { listEpisodesForFeed } from '@/reflect/state';
 import {
-  listEpisodesForFeed,
+  useCurrentEpisode,
   useEpisodesForFeed,
   useFeedById,
 } from '@/reflect/subscriptions';
@@ -10,7 +11,7 @@ import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
 import { LoaderFunctionArgs, useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
-import { $currentEpisode, $isPlaying } from '../services/state';
+import { $isPlaying } from '../services/state';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { id: feedId = '' } = params;
@@ -38,7 +39,7 @@ export function Component() {
   const { id } = useParams();
   invariant(id, 'Id must be present');
 
-  const currentEpisode = useStore($currentEpisode);
+  const currentEpisode = useCurrentEpisode(r);
   const isPlaying = useStore($isPlaying);
 
   const isPlayingCurrent = isPlaying && currentEpisode?.id === id;
