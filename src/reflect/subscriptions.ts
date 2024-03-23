@@ -64,11 +64,17 @@ export async function listEpisodesForFeed(
     (await tx
       .scan({ prefix: `episode/${feedId}/` })
       .toArray()) as StoredEpisode[]
-  ).map((episode) => ({
-    ...episode,
-    datePublished: new Date(episode.datePublished),
-    explicit: !!episode.explicit,
-  }));
+  )
+    .map((episode) => ({
+      ...episode,
+      datePublished: new Date(episode.datePublished),
+      explicit: !!episode.explicit,
+    }))
+    .sort((a, b) =>
+      b.datePublished
+        .toISOString()
+        .localeCompare(a.datePublished.toISOString()),
+    );
   return list as Episode[];
 }
 
