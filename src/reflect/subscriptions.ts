@@ -14,10 +14,10 @@ import type { ReadTransaction } from '@rocicorp/reflect';
 import type { Reflect } from '@rocicorp/reflect/client';
 import { useSubscribe } from '@rocicorp/reflect/react';
 import type { Mutators } from './mutators';
-import { getFeed, listFeedsImpl } from './state';
+import { getFeed, listFeeds } from './state';
 
 export async function listAllFeeds(tx: ReadTransaction): Promise<Feed[]> {
-  const feeds = await listFeedsImpl(tx);
+  const feeds = await listFeeds(tx);
   return feeds;
 }
 
@@ -67,14 +67,10 @@ export async function listEpisodesForFeed(
   )
     .map((episode) => ({
       ...episode,
-      datePublished: new Date(episode.datePublished),
       explicit: !!episode.explicit,
+      durationFormatted: formatDuration(episode.duration),
     }))
-    .sort((a, b) =>
-      b.datePublished
-        .toISOString()
-        .localeCompare(a.datePublished.toISOString()),
-    );
+    .sort((a, b) => b.datePublished.localeCompare(a.datePublished));
   return list as Episode[];
 }
 
@@ -89,4 +85,11 @@ export function useEpisodesForFeed(
   );
 
   return episodes;
+}
+
+function formatDuration(duration: number): string {
+  const hours = Math.floor(duration / 3600);
+  const minutes = Math.floor((duration % 3600) / 60);
+  const seconds = duration % 60;
+  return `${hours === 0 ? '' : hours + ':'}${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 }

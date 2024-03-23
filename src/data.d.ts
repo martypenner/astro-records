@@ -30,7 +30,7 @@ export interface ApiEpisode {
   author: string;
   image?: string;
   feedImage?: string;
-  datePublished: number;
+  datePublished: string;
   duration: number;
   durationFormatted: string;
   /** The episode number within the broader feed, e.g. 605. */
@@ -44,10 +44,11 @@ export interface ApiEpisode {
   [key: string]: ReadonlyJSONValue;
 }
 
-export interface StoredEpisode extends ApiEpisode {}
+export interface StoredEpisode extends ApiEpisode {
+  progress: number;
+}
 
 export interface Episode extends StoredEpisode {
-  datePublished: Date;
   enclosureType: MIMEType;
   explicit: boolean;
 }

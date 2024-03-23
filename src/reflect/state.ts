@@ -7,6 +7,6 @@ export const {
   set: setFeed,
   update: updateFeed,
   delete: deleteFeed,
-  list: listFeedsImpl,
+  list: listFeeds,
   listIDs: listFeedIds,
 } = generate<Feed>('feed');

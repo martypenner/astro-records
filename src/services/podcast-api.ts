@@ -1,4 +1,4 @@
-import type { ApiEpisode, Episode, Feed } from '@/data';
+import type { ApiEpisode, Feed } from '@/data';
 import { env } from '@/env';
 import pRetry from 'p-retry';
 
@@ -98,7 +98,7 @@ export const podcastById = retryable(async (id: string): Promise<Feed> => {
 });
 
 export const episodesByPodcastId = retryable(
-  async (id: string): Promise<Episode[]> => {
+  async (id: string): Promise<ApiEpisode[]> => {
     const params = new URLSearchParams();
     params.set('id', id);
     params.set('fulltext', 'true');
@@ -126,20 +126,12 @@ export const episodesByPodcastId = retryable(
           : episode.image == null
             ? episode.feedImage
             : episode.image,
-      datePublished: new Date(episode.datePublished * 1000),
-      durationFormatted: formatDuration(episode.duration),
+      datePublished: episode.datePublished,
       duration: episode.duration,
       episode: episode.episode,
       enclosureUrl: episode.enclosureUrl,
       enclosureType: episode.enclosureType,
-      explicit: episode.explicit === 1,
-    })) as Episode[];
+      explicit: episode.explicit,
+    })) as ApiEpisode[];
   },
 );
-
-function formatDuration(duration: number): string {
-  const hours = Math.floor(duration / 3600);
-  const minutes = Math.floor((duration % 3600) / 60);
-  const seconds = duration % 60;
-  return `${hours === 0 ? '' : hours + ':'}${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-}

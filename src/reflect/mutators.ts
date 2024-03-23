@@ -16,16 +16,17 @@
 // thing. The Reflect sync protocol ensures that the server-side result takes
 // precedence over the client-side optimistic result.
 
-import type { Episode, Feed } from '@/data';
+import type { ApiEpisode, Episode, Feed, StoredEpisode } from '@/data';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
 import { mustGetFeed, setFeed, updateFeed } from './state';
 
 export const mutators = {
   addFeed,
   addFeeds,
-  addEpisodesForFeed,
   subscribeToFeed,
   unsubscribeFromFeed,
+  addEpisodesForFeed,
+  updateProgressForEpisode,
 } satisfies MutatorDefs;
 
 export type Mutators = typeof mutators;
@@ -70,17 +71,47 @@ async function addFeeds(
   );
 }
 
-async function addEpisodesForFeed(tx: WriteTransaction, episodes: Episode[]) {
-  console.log(
-    'Storing episodes: ',
-    episodes.map((episode) => episode),
-  );
+async function addEpisodesForFeed(
+  tx: WriteTransaction,
+  rawEpisodes: ApiEpisode[],
+) {
+  const episodes = rawEpisodes.map((episode) => ({
+    ...episode,
+    datePublished: new Date(episode.datePublished).toISOString(),
+    explicit: episode.explicit === 1,
+    progress: 0,
+  }));
+  console.debug('Storing episodes: ', episodes);
   await Promise.all(
     episodes.map(
       async (episode) =>
         await tx.set(`episode/${episode.feedId}/${episode.id}`, episode),
     ),
   );
+}
+
+async function updateProgressForEpisode(
+  tx: WriteTransaction,
+  {
+    id,
+    feedId,
+    progress,
+  }: {
+    id: Episode['id'];
+    feedId: Feed['id'];
+    progress: number;
+  },
+) {
+  console.debug('Updating progress for feed and episode:', feedId, id);
+  const storedEpisode = (await tx.get(
+    `episode/${feedId}/${id}`,
+  )) as StoredEpisode;
+  if (storedEpisode) {
+    tx.set(`episode/${feedId}/${id}`, {
+      ...storedEpisode,
+      progress,
+    });
+  }
 }
 
 async function subscribeToFeed(tx: WriteTransaction, feedId: Feed['id']) {

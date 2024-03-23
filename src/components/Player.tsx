@@ -1,4 +1,5 @@
 import type { Episode } from '@/data';
+import { r } from '@/reflect';
 import {
   $currentEpisode,
   $isPlaying,
@@ -65,15 +66,20 @@ function Player({ feedId, author, title, image }: PlayerProps) {
   const [progress, setProgress] = useState(0);
 
   const updatePlayProgress = useCallback(() => {
-    if (audioPlayer.current?.duration) {
+    if (audioPlayer.current?.duration && currentEpisode?.id) {
       const percentage =
         (audioPlayer.current.currentTime / audioPlayer.current.duration) * 100;
       setProgress(percentage);
+      r.mutate.updateProgressForEpisode({
+        id: currentEpisode.id,
+        feedId,
+        progress: percentage,
+      });
     }
     if (progressRef.current) {
       progressRef.current = requestAnimationFrame(updatePlayProgress);
     }
-  }, []);
+  }, [currentEpisode?.id, feedId]);
 
   // When the current episode's enclosure URL changes - the actual audio file URL - reset play progress.
   useEffect(() => {
