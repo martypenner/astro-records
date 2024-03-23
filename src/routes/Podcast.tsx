@@ -51,7 +51,7 @@ export function Component() {
 
   if (feed == null) {
     // TODO: throw error instead, since the loader pre-loads missing feeds
-    return <div>Loading feed...</div>;
+    return null;
   }
 
   return (
