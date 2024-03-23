@@ -117,8 +117,8 @@ export function Component() {
                 ref={inputRef}
                 type="search"
                 name="search"
-                placeholder="Search..."
-                className="border-zinc-400 border px-3 py-2 rounded-md"
+                placeholder="Search for podcasts..."
+                className="border-pink-300 border px-3 py-2 rounded-md"
               />
             </searchFetcher.Form>
           </div>
