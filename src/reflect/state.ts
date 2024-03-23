@@ -56,3 +56,7 @@ export async function getCurrentEpisode(
   }
   return null;
 }
+
+export async function getPlayerSpeed(tx: ReadTransaction): Promise<number> {
+  return ((await tx.get('/player-speed')) ?? 1) as number;
+}

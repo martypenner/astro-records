@@ -1,6 +1,6 @@
 import type { Episode } from '@/data';
 import { r } from '@/reflect';
-import { useCurrentEpisode } from '@/reflect/subscriptions';
+import { useCurrentEpisode, usePlayerSpeed } from '@/reflect/subscriptions';
 import { formatDuration } from '@/services/format-duration';
 import { $isPlaying, togglePlaying } from '@/services/state';
 import { useStore } from '@nanostores/react';
@@ -58,6 +58,7 @@ type PlayerProps = Pick<Episode, 'feedId' | 'author' | 'title' | 'image'>;
 function Player({ feedId, author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
   const currentEpisode = useCurrentEpisode(r);
+  const playerSpeed = usePlayerSpeed(r);
   const audioPlayer = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(currentEpisode?.progress ?? 0);
 
@@ -67,12 +68,17 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     const audio = audioPlayer.current;
     if (!audio) return;
 
+    // This interval needs to be fast enough to avoid the "skipping" effect
+    // that happens when the update happens "in between" sync frames; it
+    // looks like time skips a bit.
     const localUpdateInterval = 100;
     const persistedUpdateInterval = 4000;
     let lastUpdatedLocalTime = Date.now();
     let lastUpdatedPersistedTime = Date.now();
     const handleTimeUpdate = () => {
       if (!currentEpisode?.id) return;
+      audio.playbackRate = playerSpeed;
+
       const now = Date.now();
       const currentTime = audio.currentTime;
       // Throttle updates to every 1 second
@@ -106,7 +112,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [currentEpisode?.id]);
+  }, [currentEpisode?.id, playerSpeed]);
 
   // When the store playing state changes - e.g. when controlling it using a
   // different play / pause button - update the player playing state.
@@ -232,6 +238,8 @@ function Player({ feedId, author, title, image }: PlayerProps) {
           to={`/podcast/${feedId}`}
           className="flex items-center gap-5 truncate"
         >
+          <div className="text-pink-700">{playerSpeed}x</div>
+
           <img
             src={image}
             // Decorative only

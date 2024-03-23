@@ -16,6 +16,7 @@ import type { Mutators } from './mutators';
 import {
   getCurrentEpisode,
   getFeed,
+  getPlayerSpeed,
   listEpisodesForFeed,
   listRegularFeeds,
   listSearchedFeeds,
@@ -54,4 +55,8 @@ export function useEpisodesForFeed(
 
 export function useCurrentEpisode(reflect: Reflect<Mutators>): Episode | null {
   return useSubscribe(reflect, getCurrentEpisode, null);
+}
+
+export function usePlayerSpeed(reflect: Reflect<Mutators>): number {
+  return useSubscribe(reflect, getPlayerSpeed, 1);
 }

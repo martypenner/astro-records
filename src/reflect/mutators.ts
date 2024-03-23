@@ -29,6 +29,7 @@ export const mutators = {
   setCurrentEpisode,
   addEpisodesForFeed,
   updateProgressForEpisode,
+  setPlayerSpeed,
 } satisfies MutatorDefs;
 
 export type Mutators = typeof mutators;
@@ -148,4 +149,9 @@ async function unsubscribeFromFeed(tx: WriteTransaction, feedId: Feed['id']) {
   };
   console.log('Unsubscribing from feed:', feed);
   await updateFeed(tx, feed);
+}
+
+async function setPlayerSpeed(tx: WriteTransaction, speed: number) {
+  console.log('Setting player speed:', speed);
+  await tx.set(`/player-speed`, speed);
 }

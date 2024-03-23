@@ -18,3 +18,4 @@
 - [ ] maybe store trending feeds, subscribed feeds, and searched feeds separately?
 - [ ] subscribe to ids only in the feed list, and have the feed items themselves subscribe to their feed by id (should cut down in the extreme case on over-subscribing, and can open up e.g. virtualization if needed)
 - [ ] ensure that when playing an episode, we update the current episode with the progress correctly
+- [ ] fix seeking when not playing
