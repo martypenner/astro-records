@@ -2,7 +2,7 @@ import Player from '@/components/Player';
 import ErrorPage from '@/error-page';
 import { r } from '@/reflect';
 import { searchByTerm } from '@/services/podcast-api';
-import { setSearchedFeeds } from '@/services/state';
+import { setShowSearchedFeeds } from '@/services/state';
 import { FormEvent, useCallback, useEffect, useRef } from 'react';
 import {
   ActionFunctionArgs,
@@ -20,7 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const feeds = await searchByTerm(search);
-  r.mutate.addFeeds(feeds);
+  r.mutate.addFeeds({ feeds, fromSearch: true });
   return feeds;
 }
 
@@ -29,7 +29,8 @@ export function Component() {
   const searchFetcher = useFetcher();
 
   useEffect(() => {
-    setSearchedFeeds(searchFetcher.data);
+    const feeds = searchFetcher.data;
+    setShowSearchedFeeds(feeds != null);
   }, [searchFetcher.data]);
 
   const search = useCallback(

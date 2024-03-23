@@ -1,14 +1,7 @@
-import { r } from '@/reflect';
-import { useFeeds } from '@/reflect/subscriptions';
-import { $searchedFeeds } from '@/services/state';
-import { useStore } from '@nanostores/react';
+import { Feed } from '@/data';
 import { Card } from './Card';
 
-export function FeedList() {
-  const regularFeeds = useFeeds(r);
-  const searchedFeeds = useStore($searchedFeeds);
-  const feeds = searchedFeeds == null ? regularFeeds : searchedFeeds;
-
+export function FeedList({ feeds }: { feeds: Feed[] }) {
   return (
     <section className="py-8">
       <div className="container mx-auto max-w-screen-lg px-6 lg:px-0 flex items-center flex-wrap pt-4 pb-12">

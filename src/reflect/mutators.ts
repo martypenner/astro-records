@@ -20,7 +20,6 @@ import type { Episode, Feed } from '@/data';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
 
 export const mutators = {
-  initialize,
   addFeed,
   addFeeds,
   addEpisodesForFeed,
@@ -28,23 +27,40 @@ export const mutators = {
 
 export type Mutators = typeof mutators;
 
-async function initialize(tx: WriteTransaction) {
-  console.log('Initializing');
-  await tx.set(`/init`, true);
-}
-
-async function addFeed(tx: WriteTransaction, feed: Feed) {
+async function addFeed(
+  tx: WriteTransaction,
+  rawFeed: Feed,
+  fromSearch: boolean = false,
+) {
+  const feed = {
+    ...rawFeed,
+    _meta: {
+      lastUpdatedAt: Date.now(),
+      fromSearch,
+    },
+  };
   console.log('Storing feed: ', feed);
   await tx.set(`feed/${feed.id}`, feed);
 }
 
-async function addFeeds(tx: WriteTransaction, feeds: Feed[]) {
+async function addFeeds(
+  tx: WriteTransaction,
+  {
+    feeds,
+    fromSearch = false,
+  }: {
+    feeds: Feed[];
+    fromSearch?: boolean;
+  },
+) {
+  console.log(fromSearch);
   await Promise.all(
     feeds.map((feed) =>
       addFeed(
         tx,
         // Fixing a bug in podcast API by ensuring we parse JSON for occasional JSON strings
         typeof feed === 'string' ? JSON.parse(feed) : feed,
+        fromSearch,
       ),
     ),
   );

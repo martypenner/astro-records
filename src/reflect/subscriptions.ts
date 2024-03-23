@@ -21,12 +21,34 @@ export const {
   set: setFeed,
   update: updateFeed,
   delete: deleteFeed,
-  list: listFeeds,
+  list: listFeedsImpl,
   listIDs: listFeedIds,
 } = generate<Feed>('feed');
 
-export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
-  return useSubscribe(reflect, listFeeds, []);
+export async function listAllFeeds(tx: ReadTransaction): Promise<Feed[]> {
+  const feeds = await listFeedsImpl(tx);
+  return feeds;
+}
+
+export async function listSearchedFeeds(tx: ReadTransaction): Promise<Feed[]> {
+  const feeds = await listAllFeeds(tx);
+  return feeds.filter((feed) => feed._meta.fromSearch);
+}
+
+export async function listRegularFeeds(tx: ReadTransaction): Promise<Feed[]> {
+  const feeds = await listAllFeeds(tx);
+  return feeds.filter((feed) => !feed._meta.fromSearch);
+}
+
+export function useFeeds(
+  reflect: Reflect<Mutators>,
+  fromSearch: boolean = false,
+): Feed[] {
+  return useSubscribe(
+    reflect,
+    fromSearch ? listSearchedFeeds : listRegularFeeds,
+    [],
+  );
 }
 
 export function useFeedById(
@@ -39,7 +61,7 @@ export function useFeedById(
 export async function listEpisodesForFeed(
   tx: ReadTransaction,
   feedId: Feed['id'],
-) {
+): Promise<Episode[]> {
   const list = (
     (await tx
       .scan({ prefix: `episode/${feedId}/` })

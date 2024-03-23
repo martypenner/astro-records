@@ -1,9 +1,9 @@
-import { type Feed, type Episode } from '@/data';
+import { type Episode } from '@/data';
 import { atom } from 'nanostores';
 
 export const $isPlaying = atom(false);
 export const $currentEpisode = atom<Episode | null>(null);
-export const $searchedFeeds = atom<Feed[] | null>(null);
+export const $showSearchedFeeds = atom<boolean>(false);
 
 export function togglePlay() {
   $isPlaying.set(!$isPlaying.get());
@@ -25,6 +25,6 @@ export function playEpisode(episode: Episode) {
   $currentEpisode.set(episode);
 }
 
-export function setSearchedFeeds(feeds: Feed[]) {
-  $searchedFeeds.set(feeds);
+export function setShowSearchedFeeds(show: boolean) {
+  $showSearchedFeeds.set(show);
 }

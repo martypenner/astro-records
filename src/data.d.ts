@@ -8,6 +8,12 @@ export interface StoredFeed {
   url: string;
   image: string;
 
+  /** Our personal metadata. */
+  _meta: {
+    lastUpdatedAt: number;
+    fromSearch: boolean;
+  };
+
   /** Fallback */
   [key: string]: ReadonlyJSONValue;
 }

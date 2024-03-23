@@ -16,3 +16,4 @@
 - [ ] page titles
 - [ ] figure out when to fetch latest feeds and episodes
 - [ ] maybe store trending feeds, subscribed feeds, and searched feeds separately?
+- [ ] subscribe to ids only in the feed list, and have the feed items themselves subscribe to their feed by id (should cut down in the extreme case on over-subscribing, and can open up e.g. virtualization if needed)
