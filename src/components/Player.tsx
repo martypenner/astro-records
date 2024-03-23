@@ -230,7 +230,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
         <NavLink
           unstable_viewTransition
           to={`/podcast/${feedId}`}
-          className="flex items-center gap-5 shrink-0"
+          className="flex items-center gap-5 truncate"
         >
           <img
             src={image}
@@ -242,10 +242,10 @@ function Player({ feedId, author, title, image }: PlayerProps) {
             className="block rounded-md"
           />
           <div className="flex-1 min-w-0">
-            <div className="text-xl text-black font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="text-xl text-black font-medium overflow-hidden whitespace-nowrap truncate">
               {title}
             </div>
-            <div className="text-xl text-gray-700 overflow-hidden text-ellipsis whitespace-nowrap">
+            <div className="text-xl text-gray-700 overflow-hidden whitespace-nowrap truncate">
               {author}
             </div>
           </div>
