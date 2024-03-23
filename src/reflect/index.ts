@@ -7,7 +7,7 @@ const userID = 'testing';
 export const r = new Reflect({
   server,
   userID,
-  roomID: 'my-room',
+  roomID: 'my-room-1',
   auth: userID,
   schemaVersion: '1',
   kvStore: 'idb',
