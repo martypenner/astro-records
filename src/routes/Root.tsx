@@ -1,7 +1,45 @@
 import Player from '@/components/Player';
-import { NavLink, Outlet, ScrollRestoration } from 'react-router-dom';
+import ErrorPage from '@/error-page';
+import { r } from '@/reflect';
+import { searchByTerm } from '@/services/podcast-api';
+import { setSearchedFeeds } from '@/services/state';
+import { FormEvent, useCallback, useEffect, useRef } from 'react';
+import {
+  ActionFunctionArgs,
+  NavLink,
+  Outlet,
+  ScrollRestoration,
+  useFetcher,
+} from 'react-router-dom';
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+  const search = formData.get('search')?.toString();
+  if (!search?.length) {
+    return null;
+  }
+
+  const feeds = await searchByTerm(search);
+  r.mutate.addFeeds(feeds);
+  return feeds;
+}
 
 export function Component() {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const searchFetcher = useFetcher();
+
+  useEffect(() => {
+    setSearchedFeeds(searchFetcher.data);
+  }, [searchFetcher.data]);
+
+  const search = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      searchFetcher.submit(event.currentTarget, { method: 'post' });
+    },
+    [searchFetcher],
+  );
+
   return (
     // TODO: fade in
     <div className="wrapper flex flex-col h-screen">
@@ -10,7 +48,7 @@ export function Component() {
         id="page-header"
         style={{ viewTransitionName: 'header' }}
       >
-        <div className="w-full container mx-auto max-w-screen-lg px-6 lg:px-0 flex flex-wrap items-center mt-0 py-6">
+        <div className="w-full container mx-auto max-w-screen-lg px-6 lg:px-0 flex flex-nowrap items-center justify-between mt-0 py-6">
           <div>
             <NavLink
               unstable_viewTransition
@@ -71,8 +109,21 @@ export function Component() {
               Podcast Library
             </NavLink>
           </div>
+
+          <div>
+            <searchFetcher.Form onSubmit={search}>
+              <input
+                ref={inputRef}
+                type="search"
+                name="search"
+                placeholder="Search..."
+                className="border-zinc-400 border px-3 py-2 rounded-md"
+              />
+            </searchFetcher.Form>
+          </div>
         </div>
       </nav>
+
       <div className="main-content flex-1 overflow-auto">
         <Outlet />
 
@@ -96,4 +147,8 @@ export function Component() {
       <ScrollRestoration />
     </div>
   );
+}
+
+export function ErrorBoundary() {
+  return <ErrorPage />;
 }

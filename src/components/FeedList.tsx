@@ -1,9 +1,13 @@
 import { r } from '@/reflect';
 import { useFeeds } from '@/reflect/subscriptions';
+import { $searchedFeeds } from '@/services/state';
+import { useStore } from '@nanostores/react';
 import { Card } from './Card';
 
 export function FeedList() {
-  const feeds = useFeeds(r);
+  const regularFeeds = useFeeds(r);
+  const searchedFeeds = useStore($searchedFeeds);
+  const feeds = searchedFeeds == null ? regularFeeds : searchedFeeds;
 
   return (
     <section className="py-8">

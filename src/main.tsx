@@ -1,7 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Component as Root } from './routes/Root';
-import ErrorPage from './error-page';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { r } from './reflect';
 
@@ -11,11 +9,10 @@ import './styles/transitions.css';
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Root />,
-    errorElement: <ErrorPage />,
+    lazy: () => import('./routes/Root'),
     children: [
       {
-        path: '/',
+        index: true,
         lazy: () => import('./routes/Home'),
       },
       {
