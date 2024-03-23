@@ -10,20 +10,11 @@
 // changes. The subscription "fires" when the result of the query changes.
 
 import type { Episode, Feed, StoredEpisode } from '@/data';
-import { generate } from '@rocicorp/rails';
 import type { ReadTransaction } from '@rocicorp/reflect';
 import type { Reflect } from '@rocicorp/reflect/client';
 import { useSubscribe } from '@rocicorp/reflect/react';
 import type { Mutators } from './mutators';
-
-export const {
-  get: getFeed,
-  set: setFeed,
-  update: updateFeed,
-  delete: deleteFeed,
-  list: listFeedsImpl,
-  listIDs: listFeedIds,
-} = generate<Feed>('feed');
+import { getFeed, listFeedsImpl } from './state';
 
 export async function listAllFeeds(tx: ReadTransaction): Promise<Feed[]> {
   const feeds = await listFeedsImpl(tx);
@@ -38,6 +29,13 @@ export async function listSearchedFeeds(tx: ReadTransaction): Promise<Feed[]> {
 export async function listRegularFeeds(tx: ReadTransaction): Promise<Feed[]> {
   const feeds = await listAllFeeds(tx);
   return feeds.filter((feed) => !feed._meta.fromSearch);
+}
+
+export async function listSubscribedFeeds(
+  tx: ReadTransaction,
+): Promise<Feed[]> {
+  const feeds = await listAllFeeds(tx);
+  return feeds.filter((feed) => feed._meta.subscribed);
 }
 
 export function useFeeds(

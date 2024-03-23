@@ -50,6 +50,7 @@ export function Component() {
   const episodes = useEpisodesForFeed(r, id);
 
   if (feed == null) {
+    // TODO: throw error instead, since the loader pre-loads missing feeds
     return <div>Loading feed...</div>;
   }
 
@@ -87,6 +88,7 @@ export function Component() {
           <div className="mt-2 text-lg">{feed.description}</div>
           <div className="mt-3 flex">
             {episodes.length > 0 && <PlayButton />}
+
             <button
               disabled
               type="button"
@@ -107,6 +109,33 @@ export function Component() {
                 ></path>
               </svg>
               Shuffle
+            </button>
+
+            <button
+              type="button"
+              className="text-pink-700 bg-gray-100 hover:bg-gray-200 focus-visible:ring-2 focus:outline-none focus:ring-black font-medium rounded-lg text-lg px-10 py-3 text-center inline-flex items-center dark:focus:ring-black mr-4"
+              onClick={() =>
+                feed._meta.subscribed
+                  ? r.mutate.unsubscribeFromFeed(feed.id)
+                  : r.mutate.subscribeToFeed(feed.id)
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                focusable="false"
+                className="w-6 h-6 mr-2 -ml-1 text-pink-700"
+                fill="currentColor"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5v14" />
+              </svg>
+              {feed._meta.subscribed ? 'Unsubscribe' : 'Subscribe'}
             </button>
           </div>
         </div>

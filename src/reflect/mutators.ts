@@ -18,11 +18,14 @@
 
 import type { Episode, Feed } from '@/data';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
+import { mustGetFeed, setFeed, updateFeed } from './state';
 
 export const mutators = {
   addFeed,
   addFeeds,
   addEpisodesForFeed,
+  subscribeToFeed,
+  unsubscribeFromFeed,
 } satisfies MutatorDefs;
 
 export type Mutators = typeof mutators;
@@ -37,10 +40,12 @@ async function addFeed(
     _meta: {
       lastUpdatedAt: Date.now(),
       fromSearch,
+      lastSubscribedAt: Date.now(),
+      subscribed: false,
     },
   };
   console.log('Storing feed: ', feed);
-  await tx.set(`feed/${feed.id}`, feed);
+  await setFeed(tx, feed);
 }
 
 async function addFeeds(
@@ -53,7 +58,6 @@ async function addFeeds(
     fromSearch?: boolean;
   },
 ) {
-  console.log(fromSearch);
   await Promise.all(
     feeds.map((feed) =>
       addFeed(
@@ -77,4 +81,31 @@ async function addEpisodesForFeed(tx: WriteTransaction, episodes: Episode[]) {
         await tx.set(`episode/${episode.feedId}/${episode.id}`, episode),
     ),
   );
+}
+
+async function subscribeToFeed(tx: WriteTransaction, feedId: Feed['id']) {
+  const storedFeed = await mustGetFeed(tx, feedId);
+  const feed = {
+    ...storedFeed,
+    _meta: {
+      ...storedFeed._meta,
+      subscribed: true,
+      lastSubscribedAt: Date.now(),
+    },
+  };
+  console.log('Subscribing to feed:', feed);
+  await updateFeed(tx, feed);
+}
+
+async function unsubscribeFromFeed(tx: WriteTransaction, feedId: Feed['id']) {
+  const storedFeed = await mustGetFeed(tx, feedId);
+  const feed = {
+    ...storedFeed,
+    _meta: {
+      ...storedFeed._meta,
+      subscribed: false,
+    },
+  };
+  console.log('Unsubscribing from feed:', feed);
+  await updateFeed(tx, feed);
 }

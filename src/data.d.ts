@@ -12,6 +12,8 @@ export interface StoredFeed {
   _meta: {
     lastUpdatedAt: number;
     fromSearch: boolean;
+    lastSubscribedAt: number;
+    subscribed: boolean;
   };
 
   /** Fallback */
