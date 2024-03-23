@@ -2,7 +2,7 @@ import { isRouteErrorResponse, useRouteError } from 'react-router-dom';
 
 export function ErrorBoundary() {}
 export default function ErrorPage() {
-  const error = useRouteError();
+  const error = useRouteError() as Error;
   console.error(error);
 
   return (
@@ -14,7 +14,7 @@ export default function ErrorPage() {
           {error.status} {error.statusText}
         </h1>
       ) : (
-        <h1>{error.message || error}</h1>
+        <h1>{error.message}</h1>
       )}
     </div>
   );

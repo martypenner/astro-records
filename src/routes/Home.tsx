@@ -1,6 +1,7 @@
 import { FeedList } from '@/components/FeedList';
 import { r } from '@/reflect';
-import { listRegularFeeds, useFeeds } from '@/reflect/subscriptions';
+import { listRegularFeeds } from '@/reflect/state';
+import { useFeeds } from '@/reflect/subscriptions';
 import { trending } from '@/services/podcast-api';
 import { $showSearchedFeeds } from '@/services/state';
 import { useStore } from '@nanostores/react';
@@ -8,7 +9,7 @@ import { useStore } from '@nanostores/react';
 export async function loader() {
   const feeds = await r.query(listRegularFeeds);
   if (feeds.length === 0) {
-    // don't await this so the UI can render right away
+    // Don't await this so the UI can render right away
     trending().then((feeds) => {
       r.mutate.addFeeds({ feeds });
     });
