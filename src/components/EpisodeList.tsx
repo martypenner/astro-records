@@ -50,9 +50,9 @@ export default function EpisodeList({ podcastId }: Props) {
           <li key={episode.id} className="first:border-t border-b">
             <Wrapper episode={episode} isCurrentEpisode={isCurrentEpisode}>
               <div className="flex basis grow w-full items-center gap-4">
-                <span className="font-normal text-md">{episode.episode}</span>
                 <div className="flex flex-col justify-start items-start">
                   <span className="text-sm mb-1">
+                    {episode.episode}
                     {new Date(episode.datePublished).toLocaleDateString()}
                   </span>
                   <span className="font-medium text-left">{episode.title}</span>
