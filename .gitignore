@@ -1,6 +1,7 @@
 .partykit
 .reflect
 .dev.vars
+.wrangler
 .env
 
 # Logs
