@@ -117,11 +117,11 @@ function Player({ feedId, author, title, image }: PlayerProps) {
   // When the store playing state changes - e.g. when controlling it using a
   // different play / pause button - update the player playing state.
   useEffect(() => {
-    const audio = audioPlayer.current;
-    if (!audio) return;
-
     // Delay by a bit to let the audio player catch up
     requestAnimationFrame(() => {
+      const audio = audioPlayer.current;
+      if (!audio) return;
+
       if (isPlaying) {
         audio.play();
       } else {
@@ -130,19 +130,31 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     });
   }, [isPlaying]);
 
-  // When the current episode changes, update the audio src to it and restore player progress.
+  // When the current episode changes, update the audio src and restore player progress.
   useEffect(() => {
-    const audio = audioPlayer.current;
-    if (!audio || currentEpisode?.enclosureUrl == null) return;
+    const doIt = async () => {
+      const audio = audioPlayer.current;
+      if (!audio || currentEpisode?.id == null) return;
 
-    audio.src = currentEpisode.enclosureUrl.toString();
-    audio.currentTime = currentEpisode.progress;
-    audio.play();
-    setProgress(currentEpisode.progress);
+      let url = currentEpisode.enclosureUrl;
+      const cache = await caches.open('podcast-episode-cache/v1');
+      const response = await cache.match(currentEpisode.id);
+      if (response) {
+        const blob = await response.blob();
+        url = URL.createObjectURL(blob);
+        console.debug('Using cached episode:', currentEpisode.id);
+      }
+
+      audio.src = url;
+      audio.currentTime = currentEpisode.progress;
+      setProgress(currentEpisode.progress);
+    };
+
+    doIt();
 
     // We don't want to react to changes in episode progress.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEpisode?.enclosureUrl]);
+  }, [currentEpisode?.id, currentEpisode?.enclosureUrl]);
 
   // Update the progress tracker / slider if a mutation comes in while we're not playing.
   // This is important so that the player picks up where it left off when you switch episodes.

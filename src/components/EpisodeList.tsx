@@ -1,4 +1,5 @@
 import type { Episode, Feed } from '@/data';
+import { env } from '@/env';
 import { r } from '@/reflect';
 import { useCurrentEpisode, useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
@@ -55,7 +56,7 @@ export default function EpisodeList({ podcastId }: Props) {
                 const body = new FormData();
                 body.set('episodeUrl', episode.enclosureUrl);
                 const response = await fetch(
-                  `http://localhost:8787/download-episode`,
+                  `${env.VITE_SERVER_URL}/download-episode`,
                   {
                     method: 'post',
                     body,
