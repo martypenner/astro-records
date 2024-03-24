@@ -60,18 +60,26 @@ export const searchByTerm = retryable(
     const params = url.searchParams;
     params.set('q', query);
     url.search = params.toString();
-    const response = await fetch(url, options).then((res) => res.json());
+    const response = (await fetch(url, options).then((res) => res.json())) as {
+      status: string;
+      description: string;
+      feeds: Feed[];
+    };
     if (response.status !== 'true') {
       throw new Error(response.description);
     }
 
-    return response.feeds as Feed[];
+    return response.feeds;
   },
 );
 
 export const trending = retryable(async (): Promise<Feed[]> => {
   const url = `${baseUrl}/podcasts/trending`;
-  const response = await fetch(url, options).then((res) => res.json());
+  const response = (await fetch(url, options).then((res) => res.json())) as {
+    status: string;
+    description: string;
+    feeds: Feed[];
+  };
   if (response.status !== 'true') {
     throw new Error(response.description);
   }
@@ -89,7 +97,11 @@ export const podcastById = retryable(async (id: string): Promise<Feed> => {
   if (response.status !== 200) {
     throw response;
   }
-  const data = await response.json();
+  const data = (await response.json()) as {
+    status: string;
+    description: string;
+    feed: Feed;
+  };
   if (data.status !== 'true') {
     throw new Error(data.description);
   }
@@ -108,13 +120,17 @@ export const episodesByPodcastId = retryable(
     if (response.status !== 200) {
       throw response;
     }
-    const data = await response.json();
+    const data = (await response.json()) as {
+      status: string;
+      description: string;
+      items: ApiEpisode[];
+    };
     if (data.status !== 'true') {
       throw new Error(data.description);
     }
     console.log(data);
 
-    return (data.items as ApiEpisode[]).map((episode) => ({
+    return data.items.map((episode) => ({
       id: episode.id,
       feedId: id,
       title: episode.title,
