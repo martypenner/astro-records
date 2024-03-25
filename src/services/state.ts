@@ -10,6 +10,14 @@ export function togglePlaying() {
   $isPlaying.set(!$isPlaying.get());
 }
 
+export function play() {
+  $isPlaying.set(true);
+}
+
+export function pause() {
+  $isPlaying.set(false);
+}
+
 export function playEpisode(episode: Episode) {
   if (episode.enclosureType.startsWith('video/')) {
     console.log('skipping video play for episode:', episode);
@@ -21,7 +29,9 @@ export function playEpisode(episode: Episode) {
     $isPlaying.set(
       episode.id === currentEpisode?.id ? !$isPlaying.get() : true,
     );
-    r.mutate.setCurrentEpisode(episode.id);
+    if (episode.id !== currentEpisode?.id) {
+      r.mutate.setCurrentEpisode(episode.id);
+    }
   });
 }
 
