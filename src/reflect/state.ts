@@ -57,6 +57,14 @@ export async function getCurrentEpisode(
   return null;
 }
 
+export async function getEpisodeById(
+  tx: ReadTransaction,
+  id: Episode['id'],
+): Promise<Episode | null> {
+  const episode = (await tx.get(`episode/${id}`)) as unknown as Episode;
+  return episode;
+}
+
 export async function getPlayerSpeed(tx: ReadTransaction): Promise<number> {
   return ((await tx.get('/player-speed')) ?? 1) as number;
 }

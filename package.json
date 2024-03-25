@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others 'reflect dev --silence-startup-message' 'VITE_REFLECT_URL=http://127.0.0.1:8080/ VITE_SERVER_URL=http://127.0.0.1:8787/ vite' 'wrangler dev server/index.ts'",
+    "dev": "concurrently --kill-others 'reflect dev --silence-startup-message' 'VITE_REFLECT_URL=http://127.0.0.1:8080/ VITE_SERVER_URL=http://127.0.0.1:8787 vite' 'wrangler dev server/index.ts'",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write .",

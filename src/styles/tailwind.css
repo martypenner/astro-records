@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.circle-progress {
+  /* Indeterminate */
+  &:not([aria-valuenow]) {
+    .fill {
+      will-change: transform;
+      stroke-dashoffset: var(--circumference);
+      transform-origin: 50% 50%; /* Ensure rotation is centered */
+      animation: rotate-progress 2s linear infinite;
+    }
+  }
+}
+
+@keyframes rotate-progress {
+  0% {
+    stroke-dashoffset: var(--circumference);
+    transform: rotate(-90deg);
+  }
+  50% {
+    stroke-dashoffset: 0;
+    transform: rotate(630deg); /* Two full rotations */
+  }
+  100% {
+    stroke-dashoffset: var(--circumference);
+    transform: rotate(990deg); /* Three full rotations */
+  }
+}

@@ -1,10 +1,10 @@
 import type { Episode, Feed } from '@/data';
-import { env } from '@/env';
 import { r } from '@/reflect';
 import { useCurrentEpisode, useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
 import { ReactNode, useMemo } from 'react';
 import { $isPlaying, playEpisode } from '../services/state';
+import { DownloadEpisode } from './DownloadEpisode';
 
 type Props = {
   podcastId: Feed['id'];
@@ -49,34 +49,7 @@ export default function EpisodeList({ podcastId }: Props) {
 
         return (
           <li key={episode.id} className="first:border-t border-b">
-            <button
-              type="button"
-              onClick={async () => {
-                const cache = await caches.open('podcast-episode-cache/v1');
-                const body = new FormData();
-                body.set('episodeUrl', episode.enclosureUrl);
-                const response = await fetch(
-                  `${env.VITE_SERVER_URL}/download-episode`,
-                  {
-                    method: 'post',
-                    body,
-                  },
-                );
-                if (!response.ok) {
-                  console.error(
-                    'Could not download podcast episode:',
-                    episode,
-                    response,
-                  );
-                  return;
-                }
-                // Store by episode ID instead of enclosure URL since the URL might change.
-                await cache.put(episode.id, response);
-                console.log('Done downloading episode:', episode);
-              }}
-            >
-              download
-            </button>
+            <DownloadEpisode id={episode.id} />
 
             <Wrapper episode={episode} isCurrentEpisode={isCurrentEpisode}>
               <div className="flex basis grow w-full items-center gap-4">

@@ -15,6 +15,7 @@ import { useSubscribe } from '@rocicorp/reflect/react';
 import type { Mutators } from './mutators';
 import {
   getCurrentEpisode,
+  getEpisodeById,
   getFeed,
   getPlayerSpeed,
   listEpisodesForFeed,
@@ -55,6 +56,13 @@ export function useEpisodesForFeed(
 
 export function useCurrentEpisode(reflect: Reflect<Mutators>): Episode | null {
   return useSubscribe(reflect, getCurrentEpisode, null);
+}
+
+export function useEpisodeById(
+  reflect: Reflect<Mutators>,
+  key: Episode['id'],
+): Episode | null {
+  return useSubscribe(reflect, (tx) => getEpisodeById(tx, key), null);
 }
 
 export function usePlayerSpeed(reflect: Reflect<Mutators>): number {
