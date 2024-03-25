@@ -25,3 +25,4 @@
 - [ ] auto-download new episodes in subscribed feed
 - [ ] delete downloads after listening
 - [ ] offline using service worker
+- [ ] switch to offline cached file once we've finished downloading
