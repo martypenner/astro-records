@@ -62,6 +62,12 @@ function Player({ feedId, author, title, image }: PlayerProps) {
   const audioPlayer = useRef<HTMLAudioElement>(null);
   const [progress, setProgress] = useState(currentEpisode?.progress ?? 0);
 
+  useEffect(() => {
+    const audio = audioPlayer.current;
+    if (!audio) return;
+    audio.playbackRate = playerSpeed;
+  }, [playerSpeed]);
+
   // Sync updates from the player to local progress - to update the slider - and
   // persist progress per episode.
   useEffect(() => {
@@ -77,7 +83,6 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     let lastUpdatedPersistedTime = Date.now();
     const handleTimeUpdate = () => {
       if (!currentEpisode?.id) return;
-      audio.playbackRate = playerSpeed;
 
       const now = Date.now();
       const currentTime = audio.currentTime;
