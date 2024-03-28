@@ -46,6 +46,23 @@ export async function listEpisodesForFeed(
   return list as Episode[];
 }
 
+/**
+ * Episodes expire 24 hours after last play time.
+ */
+export async function listExpiredEpisodes(
+  tx: ReadTransaction,
+): Promise<Episode[]> {
+  const TWENTY_FOUR_HOURS = 60 * 60 * 24 * 1000;
+  const list = (
+    (await tx.scan({ prefix: `episode/` }).toArray()) as StoredEpisode[]
+  ).filter(
+    (episode) =>
+      episode.lastPlayedAt != null &&
+      episode.lastPlayedAt > Date.now() + TWENTY_FOUR_HOURS,
+  );
+  return list as Episode[];
+}
+
 export async function getCurrentEpisode(
   tx: ReadTransaction,
 ): Promise<Episode | null> {

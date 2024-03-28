@@ -26,9 +26,10 @@ export function playEpisode(episode: Episode) {
 
   r.query(async (tx) => {
     const currentEpisode = await getCurrentEpisode(tx);
-    $isPlaying.set(
-      episode.id === currentEpisode?.id ? !$isPlaying.get() : true,
-    );
+    const isPlaying =
+      episode.id === currentEpisode?.id ? !$isPlaying.get() : true;
+    $isPlaying.set(isPlaying);
+
     if (episode.id !== currentEpisode?.id) {
       r.mutate.setCurrentEpisode(episode.id);
     }

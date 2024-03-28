@@ -120,6 +120,7 @@ async function updateProgressForEpisode(
       ...storedEpisode,
       currentTime: progress,
       played,
+      lastPlayedAt: Date.now(),
     });
   }
 }
