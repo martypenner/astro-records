@@ -51,7 +51,7 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
         await downloadWithProgress(response.clone(), onProgress);
         const cache = await caches.open('podcast-episode-cache/v1');
         // Store by episode ID instead of enclosure URL since the URL might change.
-        await cache.put(episode.id, response);
+        await cache.put(new Request('/episode/' + episode.id), response);
         console.log('Done downloading episode:', episode);
       } catch (error) {
         console.error('Could not download podcast episode:', episode, error);

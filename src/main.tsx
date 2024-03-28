@@ -2,11 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { r } from './reflect';
-import {
-  listCompletedEpisodes,
-  listExpiredEpisodes,
-  listStaleFeeds,
-} from './reflect/state';
+import { getEpisodeById, listStaleFeeds } from './reflect/state';
 import { episodesByPodcastId, podcastById } from './services/podcast-api';
 import { feedApiQueue } from './services/queue';
 import { apiThrottle } from './services/throttle';
@@ -47,29 +43,37 @@ if (import.meta.hot) {
 }
 
 const FIVE_MINUTES = 60 * 5 * 1000;
+const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
 
 const startScheduledTasks = () => {
   requestIdleCallback(async () => {
-    // Clean up completed /expired episodes every 5 minutes 24 hours after the
-    // episode has last been played.
-    const expiredEpisodes = await r.query(
-      async (tx) => await listExpiredEpisodes(tx),
-    );
-    const completedEpisodes = await r.query(
-      async (tx) => await listCompletedEpisodes(tx),
-    );
-    // TODO: this list will grow unbounded over time. Find a way to intelligently and performantly delete only the episodes that exist in the cache.
-    for (const episode of expiredEpisodes.concat(completedEpisodes)) {
-      console.debug(
-        'Clearing cached episode:',
-        episode.id,
-        new Date(episode.lastPlayedAt ?? ''),
-      );
+    // Clean up completed episodes every 5 minutes 24 hours after the
+    // episode has last been played, and expired episodes 10 days after
+    // it was last played.
+    const cache = await caches.open('podcast-episode-cache/v1');
+    const episodeIds = await cache.keys();
+    for (const request of episodeIds) {
+      const episodeId = new URL(request.url).pathname.split('/').at(-1);
+      if (!episodeId) continue;
+
+      const episode = await r.query((tx) => getEpisodeById(tx, episodeId));
       try {
-        const cache = await caches.open('podcast-episode-cache/v1');
-        await cache.delete(episode.id);
+        if (!episode) {
+          console.debug('Clearing orphaned cached episode:', episodeId);
+          await cache.delete(request);
+        } else if (
+          episode.lastPlayedAt &&
+          episode.lastPlayedAt < Date.now() - TEN_DAYS
+        ) {
+          console.debug(
+            'Clearing cached episode:',
+            episodeId,
+            new Date(episode.lastPlayedAt),
+          );
+          await cache.delete(request);
+        }
       } catch (error) {
-        console.error('Error deleting cached episode:', episode.id, error);
+        console.error('Error deleting cached episode:', episodeId, error);
       }
     }
 

@@ -4,7 +4,6 @@ import { ReadTransaction } from '@rocicorp/reflect';
 
 const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
 const SIX_HOURS = 60 * 60 * 6 * 1000;
-const TWENTY_FOUR_HOURS = 60 * 60 * 24 * 1000;
 
 export const {
   get: getFeed,
@@ -62,35 +61,6 @@ export async function listEpisodesForFeed(
   )
     .filter((episode) => episode.feedId === feedId)
     .sort((a, b) => b.datePublished.localeCompare(a.datePublished));
-  return list as Episode[];
-}
-
-/**
- * Episodes expire 10 days after last play time.
- */
-export async function listExpiredEpisodes(
-  tx: ReadTransaction,
-): Promise<Episode[]> {
-  const list = (
-    (await tx.scan({ prefix: `episode/` }).toArray()) as StoredEpisode[]
-  ).filter(
-    (episode) =>
-      episode.lastPlayedAt && episode.lastPlayedAt < Date.now() - TEN_DAYS,
-  );
-  return list as Episode[];
-}
-
-export async function listCompletedEpisodes(
-  tx: ReadTransaction,
-): Promise<Episode[]> {
-  const list = (
-    (await tx.scan({ prefix: `episode/` }).toArray()) as StoredEpisode[]
-  ).filter(
-    (episode) =>
-      episode.played &&
-      episode.lastPlayedAt &&
-      episode.lastPlayedAt < Date.now() - TWENTY_FOUR_HOURS,
-  );
   return list as Episode[];
 }
 
