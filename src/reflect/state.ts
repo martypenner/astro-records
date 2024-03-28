@@ -2,6 +2,10 @@ import { Episode, Feed, StoredEpisode, StoredFeed } from '@/data';
 import { generate } from '@rocicorp/rails';
 import { ReadTransaction } from '@rocicorp/reflect';
 
+const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
+const SIX_HOURS = 60 * 60 * 6 * 1000;
+const TWENTY_FOUR_HOURS = 60 * 60 * 24 * 1000;
+
 export const {
   get: getFeed,
   mustGet: mustGetFeed,
@@ -33,8 +37,6 @@ export async function listRegularFeeds(tx: ReadTransaction): Promise<Feed[]> {
 export async function listStaleFeeds(
   tx: ReadTransaction,
 ): Promise<StoredFeed[]> {
-  const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
-  const SIX_HOURS = 60 * 60 * 6 * 1000;
   const feeds = (await listRegularFeeds(tx)).filter((feed) => {
     return (
       feed._meta.lastAccessedAt > Date.now() - TEN_DAYS &&
@@ -64,18 +66,30 @@ export async function listEpisodesForFeed(
 }
 
 /**
- * Episodes expire 24 hours after last play time.
+ * Episodes expire 10 days after last play time.
  */
 export async function listExpiredEpisodes(
   tx: ReadTransaction,
 ): Promise<Episode[]> {
-  const TWENTY_FOUR_HOURS = 60 * 60 * 24 * 1000;
   const list = (
     (await tx.scan({ prefix: `episode/` }).toArray()) as StoredEpisode[]
   ).filter(
     (episode) =>
-      episode.lastPlayedAt != null &&
-      episode.lastPlayedAt > Date.now() + TWENTY_FOUR_HOURS,
+      episode.lastPlayedAt && episode.lastPlayedAt < Date.now() - TEN_DAYS,
+  );
+  return list as Episode[];
+}
+
+export async function listCompletedEpisodes(
+  tx: ReadTransaction,
+): Promise<Episode[]> {
+  const list = (
+    (await tx.scan({ prefix: `episode/` }).toArray()) as StoredEpisode[]
+  ).filter(
+    (episode) =>
+      episode.played &&
+      episode.lastPlayedAt &&
+      episode.lastPlayedAt < Date.now() - TWENTY_FOUR_HOURS,
   );
   return list as Episode[];
 }

@@ -29,6 +29,9 @@ dependencies:
   p-retry:
     specifier: ^6.2.0
     version: 6.2.0
+  p-throttle:
+    specifier: ^6.1.0
+    version: 6.1.0
   partysocket:
     specifier: '*'
     version: 1.0.1
@@ -4280,6 +4283,11 @@ packages:
       '@types/retry': 0.12.2
       is-network-error: 1.1.0
       retry: 0.13.1
+    dev: false
+
+  /p-throttle@6.1.0:
+    resolution: {integrity: sha512-eQMdGTxk2+047La67wefUtt0tEHh7D+C8Jl7QXoFCuIiNYeQ9zWs2AZiJdIAs72rSXZ06t11me2bgalRNdy3SQ==}
+    engines: {node: '>=18'}
     dev: false
 
   /p-timeout@6.1.2:

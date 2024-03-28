@@ -52,6 +52,7 @@ export interface StoredEpisode extends ApiEpisode {
   /** Progress of playing the episode. */
   currentTime: number;
   lastPlayedAt?: number;
+  played: boolean;
 }
 
 export interface Episode extends StoredEpisode {

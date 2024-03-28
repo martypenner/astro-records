@@ -1,13 +1,16 @@
 import EpisodeList from '@/components/EpisodeList';
 import PlayButton from '@/components/PlayButton';
+import { ApiFeed } from '@/data';
 import { r } from '@/reflect';
-import { listEpisodesForFeed } from '@/reflect/state';
+import { getFeed, listEpisodesForFeed } from '@/reflect/state';
 import {
   useCurrentEpisode,
   useEpisodesForFeed,
   useFeedById,
 } from '@/reflect/subscriptions';
 import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
+import { feedApiQueue } from '@/services/queue';
+import { apiThrottle } from '@/services/throttle';
 import { useStore } from '@nanostores/react';
 import { LoaderFunctionArgs, useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
@@ -15,23 +18,31 @@ import { $isPlaying } from '../services/state';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { id: feedId = '' } = params;
+  const feed = await r.query((tx) => getFeed(tx, feedId));
+  if (feed == null) {
+    const newFeed = (await feedApiQueue.add(
+      apiThrottle(() => podcastById(feedId)),
+    )) as ApiFeed;
+    r.mutate.addFeed(newFeed);
+  } else {
+    r.mutate.updateFeed({ id: feedId });
+  }
+
   // Fetch new episodes that aren't in the cache yet.
   const episodes = await r.query((tx) => listEpisodesForFeed(tx, feedId));
   if (episodes.length === 0) {
     try {
-      // don't await this; let the UI render right away
-      Promise.all([podcastById(feedId), episodesByPodcastId(feedId)]).then(
-        ([podcast, episodes]) =>
-          Promise.all([
-            r.mutate.addFeed(podcast),
+      feedApiQueue.add(
+        apiThrottle(() =>
+          // Don't await this; let the UI render right away
+          episodesByPodcastId(feedId).then((episodes) =>
             r.mutate.addEpisodesForFeed(episodes),
-          ]),
+          ),
+        ),
       );
     } catch (error) {
       console.error(error);
     }
-  } else {
-    r.mutate.updateFeedLastAccessedAt(feedId);
   }
 
   return episodes;

@@ -19,16 +19,18 @@
 import type { ApiEpisode, ApiFeed, Episode, Feed, StoredEpisode } from '@/data';
 import { formatDuration } from '@/services/format-duration';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
-import { mustGetFeed, setFeed, updateFeed } from './state';
+import { getEpisodeById, mustGetFeed, setFeed, updateFeed } from './state';
+import { Update } from '@rocicorp/rails';
 
 export const mutators = {
   addFeed,
   addFeeds,
   subscribeToFeed,
   unsubscribeFromFeed,
-  updateFeedLastAccessedAt,
+  updateFeed: updateFeedImpl,
   setCurrentEpisode,
   addEpisodesForFeed,
+  updateEpisodesForFeed,
   updateProgressForEpisode,
   setPlayerSpeed,
 } satisfies MutatorDefs;
@@ -76,16 +78,15 @@ async function addFeeds(
   );
 }
 
-async function updateFeedLastAccessedAt(
-  tx: WriteTransaction,
-  feedId: Feed['id'],
-) {
-  const existingFeed = await mustGetFeed(tx, feedId);
+async function updateFeedImpl(tx: WriteTransaction, entity: Update<ApiFeed>) {
+  const existingFeed = await mustGetFeed(tx, entity.id);
   const feed = {
     ...existingFeed,
     _meta: {
       ...existingFeed._meta,
       lastAccessedAt: Date.now(),
+      lastUpdatedAt: existingFeed._meta.lastUpdatedAt ?? Date.now(),
+      lastSubscribedAt: existingFeed._meta.lastSubscribedAt ?? Date.now(),
     },
   };
   console.log('Updating feed: ', feed);
@@ -103,11 +104,41 @@ async function addEpisodesForFeed(
     explicit: episode.explicit === 1,
     currentTime: 0,
   }));
-  console.debug('Storing episodes: ', episodes);
+  console.info('Storing episodes: ', episodes);
   await Promise.all(
     episodes.map(
       async (episode) => await tx.set(`episode/${episode.id}`, episode),
     ),
+  );
+}
+
+async function updateEpisodesForFeed(
+  tx: WriteTransaction,
+  rawEpisodes: Update<ApiEpisode>[],
+) {
+  const episodes = rawEpisodes.map(async (episode) => {
+    const existingEpisode = await getEpisodeById(tx, episode.id);
+    return {
+      ...existingEpisode,
+      ...episode,
+      datePublished:
+        episode.datePublished != null
+          ? new Date(episode.datePublished).toISOString()
+          : existingEpisode?.datePublished,
+      durationFormatted:
+        episode.duration != null
+          ? formatDuration(episode.duration)
+          : existingEpisode?.durationFormatted,
+      explicit: episode.explicit === 1,
+      currentTime: existingEpisode?.currentTime,
+    };
+  });
+  await Promise.all(
+    episodes.map(async (episodePromise) => {
+      const episode = await episodePromise;
+      console.debug('Storing episode:', episode);
+      return await tx.set(`episode/${episode.id}`, episode);
+    }),
   );
 }
 
