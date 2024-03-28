@@ -2,7 +2,7 @@ import type { Episode } from '@/data';
 import { r } from '@/reflect';
 import { useCurrentEpisode, usePlayerSpeed } from '@/reflect/subscriptions';
 import { formatDuration } from '@/services/format-duration';
-import { $isPlaying, togglePlaying } from '@/services/state';
+import { $isPlaying, pause, togglePlaying } from '@/services/state';
 import { useStore } from '@nanostores/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -59,26 +59,71 @@ function Player({ feedId, author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
   const currentEpisode = useCurrentEpisode(r);
   const playerSpeed = usePlayerSpeed(r);
+
   const audioPlayer = useRef<HTMLAudioElement>(null);
-  const [progress, setProgress] = useState(currentEpisode?.progress ?? 0);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isBuffering, setIsBuffering] = useState(false);
 
+  // When the current episode changes, update the audio src and restore player progress.
+  // This also kicks off a change to other effects, so it's important to get this one right.
+  useEffect(() => {
+    const setupAudioSource = async () => {
+      if (currentEpisode?.id == null) return;
+
+      // Use the cached source if available.
+      let url = currentEpisode.enclosureUrl;
+      const cache = await caches.open('podcast-episode-cache/v1');
+      const response = await cache.match(currentEpisode.id);
+      if (response) {
+        const blob = await response.blob();
+        url = URL.createObjectURL(blob);
+        console.debug('Using cached episode:', currentEpisode.id);
+      }
+
+      setAudioSrc(url);
+      // We need atomically update currentTime and duration to avoid jumpiness.
+      // We could set duration to 0 here, but I found it jarring for the slider to jump to 0 when
+      // changing episodes, then jump back to wherever it needs to be for current episode's
+      // currentTime. On average, I think leaving the slider where it is until the metadata is
+      // loaded in the other effect provides a less jumpy experience.
+    };
+
+    setupAudioSource();
+
+    // We don't want to react to changes in episode progress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEpisode?.id]);
+
+  // This is the big one:
+  // 1) Handle buffering state of new episodes;
+  // 2) sync updates from the player to local progress (for the slider); and
+  // 3) persist progress per episode.
   useEffect(() => {
     const audio = audioPlayer.current;
     if (!audio) return;
-    audio.playbackRate = playerSpeed;
-  }, [playerSpeed]);
 
-  // Sync updates from the player to local progress - to update the slider - and
-  // persist progress per episode.
-  useEffect(() => {
-    const audio = audioPlayer.current;
-    if (!audio) return;
+    audio.currentTime = currentEpisode?.currentTime ?? 0;
+    setIsBuffering(false);
+
+    const handleWaiting = () => setIsBuffering(true);
+    const handleCanPlayThrough = () => setIsBuffering(false);
+    const handleLoadedMetadata = () => {
+      setCurrentTime(currentEpisode?.currentTime ?? 0);
+      setDuration(
+        audio.duration === Infinity || isNaN(audio.duration)
+          ? 0
+          : audio.duration,
+      );
+    };
 
     // This interval needs to be fast enough to avoid the "skipping" effect
     // that happens when the update happens "in between" sync frames; it
-    // looks like time skips a bit.
+    // looks like time skips a bit. But we also want to be respectful
+    // to the device's battery life.
     const localUpdateInterval = 100;
-    const persistedUpdateInterval = 4000;
+    const persistedUpdateInterval = 4_000;
     let lastUpdatedLocalTime = Date.now();
     let lastUpdatedPersistedTime = Date.now();
     const handleTimeUpdate = () => {
@@ -89,86 +134,103 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       // Throttle updates to every 1 second
       if (now - lastUpdatedLocalTime >= localUpdateInterval) {
         lastUpdatedLocalTime = Date.now();
-        setProgress(Math.min(currentTime, audio.duration));
+        setCurrentTime(currentTime);
       }
-      // Persist changes even less frequently
-      if (now - lastUpdatedPersistedTime >= persistedUpdateInterval) {
-        lastUpdatedPersistedTime = Date.now();
-        r.mutate.updateProgressForEpisode({
-          id: currentEpisode.id,
-          progress: Math.min(currentTime, audio.duration),
-        });
+
+      // We're near the end; mark at as done. This won't update the local
+      // component; this syncs the state with the server in case we pick
+      // up this episode elsewhere.
+      if (audio.duration - audio.currentTime <= 10) {
+        // Only update once at the end
+        if (currentEpisode.progress !== 100) {
+          r.mutate.updateProgressForEpisode({
+            id: currentEpisode.id,
+            progress: 100,
+            played: true,
+          });
+        }
+      } else {
+        // Persist regular time updates even less frequently
+        if (now - lastUpdatedPersistedTime >= persistedUpdateInterval) {
+          lastUpdatedPersistedTime = Date.now();
+          r.mutate.updateProgressForEpisode({
+            id: currentEpisode.id,
+            progress: currentTime,
+          });
+        }
       }
     };
+
     const handleEnded = () => {
-      setProgress(0);
       if (!currentEpisode?.id) return;
+
+      pause();
+      setCurrentTime(0);
       r.mutate.updateProgressForEpisode({
         id: currentEpisode.id,
-        progress: 0,
+        progress: 100,
         played: true,
       });
     };
 
+    audio.addEventListener('waiting', handleWaiting);
+    audio.addEventListener('canplaythrough', handleCanPlayThrough);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
 
+    if (isPlaying) {
+      // Manually load the new source, since apparently some browsers
+      // won't start playing properly if you don't.
+      audio.load();
+      audio
+        .play()
+        .catch((error) =>
+          console.error('Error attempting to play audio:', error),
+        );
+    }
+
     return () => {
+      audio.removeEventListener('waiting', handleWaiting);
+      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [currentEpisode?.id, playerSpeed]);
+
+    // Don't want to react to changes to anything other than audio source updates.
+    // Other effects will handle reacting to the other relevant fields.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioSrc]);
 
   // When the store playing state changes - e.g. when controlling it using a
   // different play / pause button - update the player playing state.
   useEffect(() => {
-    // Delay by a bit to let the audio player catch up
-    requestAnimationFrame(() => {
-      const audio = audioPlayer.current;
-      if (!audio) return;
+    const audio = audioPlayer.current;
+    if (!audio) return;
 
-      if (isPlaying) {
-        audio.play();
-      } else {
-        audio.pause();
-      }
-    });
+    if (isPlaying) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
   }, [isPlaying]);
 
-  // When the current episode changes, update the audio src and restore player progress.
-  useEffect(() => {
-    const doIt = async () => {
-      const audio = audioPlayer.current;
-      if (!audio || currentEpisode?.id == null) return;
-
-      let url = currentEpisode.enclosureUrl;
-      const cache = await caches.open('podcast-episode-cache/v1');
-      const response = await cache.match(currentEpisode.id);
-      if (response) {
-        const blob = await response.blob();
-        url = URL.createObjectURL(blob);
-        console.debug('Using cached episode:', currentEpisode.id);
-      }
-
-      audio.src = url;
-      audio.currentTime = currentEpisode.progress;
-      setProgress(currentEpisode.progress);
-    };
-
-    doIt();
-
-    // We don't want to react to changes in episode progress.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEpisode?.id, currentEpisode?.enclosureUrl]);
-
-  // Update the progress tracker / slider if a mutation comes in while we're not playing.
+  // Update the progress tracker if a mutation comes in while we're not playing.
   // This is important so that the player picks up where it left off when you switch episodes.
   useEffect(() => {
     if (!isPlaying) {
-      if (currentEpisode?.progress == null) return;
-      setProgress(currentEpisode.progress);
+      if (currentEpisode?.currentTime == null) return;
+      setCurrentTime(currentEpisode.currentTime);
     }
-  }, [currentEpisode?.progress, isPlaying]);
+  }, [currentEpisode?.currentTime, isPlaying]);
+
+  // Update player speed reactively.
+  useEffect(() => {
+    const audio = audioPlayer.current;
+    if (!audio) return;
+    audio.playbackRate = playerSpeed;
+  }, [playerSpeed]);
 
   return (
     <div
@@ -183,43 +245,40 @@ function Player({ feedId, author, title, image }: PlayerProps) {
 
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 flex justify-center">
         <span className="text-gray-50">
-          {formatDuration(progress, true)} /{' '}
+          {formatDuration(currentTime, true)} /{' '}
           {currentEpisode?.durationFormatted ?? ''}
         </span>
 
-        <Slider
-          aria-label="Audio timeline"
-          className="w-full"
-          value={progress}
-          minValue={0}
-          // TODO: update this AS SOON AS the current episode changes
-          maxValue={
-            Number.isNaN(audioPlayer.current?.duration ?? 0)
-              ? 0
-              : audioPlayer.current?.duration
-          }
-          step={0.1}
-          onChange={(progress: number) => {
-            setProgress(progress);
-            if (!audioPlayer.current) return;
-            audioPlayer.current.currentTime = progress;
-          }}
-        >
-          <SliderTrack className="relative w-full h-7">
-            {({ state }) => (
-              <>
-                {/* track */}
-                <div className="absolute h-2 top-[50%] translate-y-[-50%] w-full rounded-full bg-white/40" />
-                {/* fill */}
-                <div
-                  className="absolute h-2 top-[50%] translate-y-[-50%] rounded-full bg-white"
-                  style={{ width: state.getThumbPercent(0) * 100 + '%' }}
-                />
-                <SliderThumb className="h-5 w-5 top-[50%] rounded-full border border-solid border-purple-800/75 bg-white transition dragging:bg-purple-100 outline-none focus-visible:ring-2 ring-black" />
-              </>
-            )}
-          </SliderTrack>
-        </Slider>
+        {audioSrc != null && (
+          <Slider
+            aria-label="Audio timeline"
+            className="w-full"
+            value={currentTime}
+            minValue={0}
+            maxValue={duration}
+            step={0.1}
+            onChange={(currentTime: number) => {
+              setCurrentTime(currentTime);
+              if (!audioPlayer.current) return;
+              audioPlayer.current.currentTime = currentTime;
+            }}
+          >
+            <SliderTrack className="relative w-full h-7">
+              {({ state }) => (
+                <>
+                  {/* track */}
+                  <div className="absolute h-2 top-[50%] translate-y-[-50%] w-full rounded-full bg-white/40" />
+                  {/* fill */}
+                  <div
+                    className="absolute h-2 top-[50%] translate-y-[-50%] rounded-full bg-white"
+                    style={{ width: state.getThumbPercent(0) * 100 + '%' }}
+                  />
+                  <SliderThumb className="h-5 w-5 top-[50%] rounded-full border border-solid border-purple-800/75 bg-white transition dragging:bg-purple-100 outline-none focus-visible:ring-2 ring-black" />
+                </>
+              )}
+            </SliderTrack>
+          </Slider>
+        )}
       </div>
 
       {/* <div className="flex-1 bg-gray-200 h-3 dark:bg-gray-700"> */}
@@ -257,6 +316,8 @@ function Player({ feedId, author, title, image }: PlayerProps) {
         >
           <div className="text-pink-700">{playerSpeed}x</div>
 
+          {isBuffering && <div>Buffering...</div>}
+
           <img
             src={image}
             // Decorative only
@@ -276,7 +337,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
           </div>
         </NavLink>
 
-        <audio ref={audioPlayer} />
+        {audioSrc != null && <audio ref={audioPlayer} src={audioSrc} />}
 
         <div className="flex gap-6 items-center shrink-0 text-black">
           <button

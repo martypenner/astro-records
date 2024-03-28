@@ -1,7 +1,6 @@
-- replicache local
-- sync with partykit / whatever works
-- ensure audio can be downloaded and cached
-- run crons a few times a day to grab new podcasts that all clients will pull
+- [ ] replicache local instead of reflect
+- [ ] sync with partykit / whatever works
+- [ ] run crons a few times a day to grab new podcasts that all clients will pull (freshness check)
 - [ ] track which ones are subscribed to
 - [ ] track which ones are watched
 - [ ] add transcripts somehow
@@ -25,4 +24,5 @@
 - [ ] auto-download new episodes in subscribed feed
 - [ ] delete downloads after listening
 - [ ] offline using service worker
-- [ ] switch to offline cached file once we've finished downloading
+- [ ] switch to offline cached file once we've finished downloading. this will be tricky, since I think the blob URL can change page load to page load, meaning we can't store it. if we mutate the episode to mark it as downloaded, we need to be careful about falling back to the remote URL when the user evicts their cache / storage.
+- [ ] add explicit cancellation to download button

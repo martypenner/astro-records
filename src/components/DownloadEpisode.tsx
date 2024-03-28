@@ -26,49 +26,48 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
         setProgress(progress);
         setIndeterminate(false);
       }
-
-      if (progress === 100) {
-        // const cache = await caches.open('podcast-episode-cache/v1');
-        // // Store by episode ID instead of enclosure URL since the URL might change.
-        //  await cache.put(episode.id, response);
-        // console.log('Done downloading episode:', episode);
-      }
     },
     [episode],
   );
 
+  const triggerDownload = useCallback(() => {
+    const download = async () => {
+      if (!episode) return;
+
+      setDownloading(true);
+      setProgress(0);
+      setIndeterminate(false);
+
+      const data = new FormData();
+      data.set('episodeUrl', episode.enclosureUrl);
+      try {
+        const response = await fetch(
+          `${env.VITE_SERVER_URL}/download-episode`,
+          {
+            method: 'post',
+            body: data,
+          },
+        );
+        await downloadWithProgress(response.clone(), onProgress);
+        const cache = await caches.open('podcast-episode-cache/v1');
+        // Store by episode ID instead of enclosure URL since the URL might change.
+        await cache.put(episode.id, response);
+        console.log('Done downloading episode:', episode);
+      } catch (error) {
+        console.error('Could not download podcast episode:', episode, error);
+      }
+
+      setDownloading(false);
+      setProgress(0);
+      setIndeterminate(false);
+    };
+
+    download();
+  }, [episode, onProgress]);
+
   return (
     <>
-      <button
-        type="button"
-        disabled={downloading}
-        onClick={async () => {
-          if (!episode) return;
-
-          setDownloading(true);
-          setProgress(0);
-          setIndeterminate(false);
-
-          const data = new FormData();
-          data.set('episodeUrl', episode.enclosureUrl);
-          try {
-            const response = await fetch(
-              `${env.VITE_SERVER_URL}/download-episode`,
-              {
-                method: 'post',
-                body: data,
-              },
-            );
-            await downloadWithProgress(response, onProgress);
-          } catch (error) {
-            console.error('Could not download podcast episode:', episode);
-          }
-
-          setDownloading(false);
-          setProgress(0);
-          setIndeterminate(false);
-        }}
-      >
+      <button type="button" disabled={downloading} onClick={triggerDownload}>
         download
         {downloading && (
           <CircleProgress value={progress} isIndeterminate={indeterminate} />
@@ -78,6 +77,7 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
   );
 }
 
+// TODO: stick this thing in a web worker
 async function downloadWithProgress(
   response: Response,
   onProgress: (progress: number | 'indeterminate') => void,

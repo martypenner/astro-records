@@ -83,7 +83,7 @@ async function addEpisodesForFeed(
     datePublished: new Date(episode.datePublished).toISOString(),
     durationFormatted: formatDuration(episode.duration),
     explicit: episode.explicit === 1,
-    progress: 0,
+    currentTime: 0,
   }));
   console.debug('Storing episodes: ', episodes);
   await Promise.all(
@@ -118,7 +118,7 @@ async function updateProgressForEpisode(
   if (storedEpisode) {
     await tx.set(`episode/${id}`, {
       ...storedEpisode,
-      progress,
+      currentTime: progress,
       played,
     });
   }

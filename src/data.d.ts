@@ -46,7 +46,8 @@ export interface ApiEpisode {
 export interface StoredEpisode extends ApiEpisode {
   durationFormatted: string;
   explicit: boolean;
-  progress: number;
+  /** Progress of playing the episode. */
+  currentTime: number;
 }
 
 export interface Episode extends StoredEpisode {
