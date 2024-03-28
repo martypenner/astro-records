@@ -30,6 +30,8 @@ export async function loader({ params }: LoaderFunctionArgs) {
     } catch (error) {
       console.error(error);
     }
+  } else {
+    r.mutate.updateFeedLastAccessedAt(feedId);
   }
 
   return episodes;
@@ -51,7 +53,7 @@ export function Component() {
   const episodes = useEpisodesForFeed(r, id);
 
   if (feed == null) {
-    // TODO: throw error instead, since the loader pre-loads missing feeds
+    // TODO: throw error or show suspense instead, since the loader pre-loads missing feeds
     return null;
   }
 

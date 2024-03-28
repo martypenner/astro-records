@@ -16,7 +16,7 @@
 // thing. The Reflect sync protocol ensures that the server-side result takes
 // precedence over the client-side optimistic result.
 
-import type { ApiEpisode, Episode, Feed, StoredEpisode } from '@/data';
+import type { ApiEpisode, ApiFeed, Episode, Feed, StoredEpisode } from '@/data';
 import { formatDuration } from '@/services/format-duration';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
 import { mustGetFeed, setFeed, updateFeed } from './state';
@@ -26,6 +26,7 @@ export const mutators = {
   addFeeds,
   subscribeToFeed,
   unsubscribeFromFeed,
+  updateFeedLastAccessedAt,
   setCurrentEpisode,
   addEpisodesForFeed,
   updateProgressForEpisode,
@@ -36,16 +37,17 @@ export type Mutators = typeof mutators;
 
 async function addFeed(
   tx: WriteTransaction,
-  rawFeed: Feed,
+  rawFeed: ApiFeed,
   fromSearch: boolean = false,
 ) {
   const feed = {
     ...rawFeed,
     _meta: {
       lastUpdatedAt: Date.now(),
-      fromSearch,
+      lastAccessedAt: Date.now(),
       lastSubscribedAt: Date.now(),
       subscribed: false,
+      fromSearch,
     },
   };
   console.log('Storing feed: ', feed);
@@ -72,6 +74,22 @@ async function addFeeds(
       ),
     ),
   );
+}
+
+async function updateFeedLastAccessedAt(
+  tx: WriteTransaction,
+  feedId: Feed['id'],
+) {
+  const existingFeed = await mustGetFeed(tx, feedId);
+  const feed = {
+    ...existingFeed,
+    _meta: {
+      ...existingFeed._meta,
+      lastAccessedAt: Date.now(),
+    },
+  };
+  console.log('Updating feed: ', feed);
+  await updateFeed(tx, feed);
 }
 
 async function addEpisodesForFeed(
@@ -133,6 +151,7 @@ async function subscribeToFeed(tx: WriteTransaction, feedId: Feed['id']) {
       ...storedFeed._meta,
       subscribed: true,
       lastSubscribedAt: Date.now(),
+      lastAccessedAt: Date.now(),
     },
   };
   console.log('Subscribing to feed:', feed);

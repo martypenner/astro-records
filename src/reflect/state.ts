@@ -1,4 +1,4 @@
-import { Episode, Feed, StoredEpisode } from '@/data';
+import { Episode, Feed, StoredEpisode, StoredFeed } from '@/data';
 import { generate } from '@rocicorp/rails';
 import { ReadTransaction } from '@rocicorp/reflect';
 
@@ -25,6 +25,23 @@ export async function listSearchedFeeds(tx: ReadTransaction): Promise<Feed[]> {
 export async function listRegularFeeds(tx: ReadTransaction): Promise<Feed[]> {
   const feeds = await listAllFeeds(tx);
   return feeds.filter((feed) => !feed._meta.fromSearch);
+}
+
+/**
+ * List active feeds (have been accessed in the last 10 days) that have not been refreshed within the last 6 hours.
+ */
+export async function listStaleFeeds(
+  tx: ReadTransaction,
+): Promise<StoredFeed[]> {
+  const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
+  const SIX_HOURS = 60 * 60 * 6 * 1000;
+  const feeds = (await listRegularFeeds(tx)).filter((feed) => {
+    return (
+      feed._meta.lastAccessedAt > Date.now() - TEN_DAYS &&
+      feed._meta.lastUpdatedAt < Date.now() - SIX_HOURS
+    );
+  });
+  return feeds;
 }
 
 export async function listSubscribedFeeds(

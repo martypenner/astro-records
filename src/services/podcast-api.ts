@@ -1,4 +1,4 @@
-import type { ApiEpisode, Feed } from '@/data';
+import type { ApiEpisode, ApiFeed, Feed } from '@/data';
 import { env } from '@/env';
 import pRetry from 'p-retry';
 
@@ -87,7 +87,7 @@ export const trending = retryable(async (): Promise<Feed[]> => {
   return response.feeds as Feed[];
 });
 
-export const podcastById = retryable(async (id: string): Promise<Feed> => {
+export const podcastById = retryable(async (id: string): Promise<ApiFeed> => {
   const params = new URLSearchParams();
   params.set('id', id);
   params.set('fulltext', 'true');
@@ -100,13 +100,13 @@ export const podcastById = retryable(async (id: string): Promise<Feed> => {
   const data = (await response.json()) as {
     status: string;
     description: string;
-    feed: Feed;
+    feed: ApiFeed;
   };
   if (data.status !== 'true') {
     throw new Error(data.description);
   }
 
-  return data.feed as Feed;
+  return data.feed as ApiFeed;
 });
 
 export const episodesByPodcastId = retryable(

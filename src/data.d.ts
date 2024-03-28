@@ -1,16 +1,19 @@
 import type { ReadonlyJSONValue } from '@rocicorp/reflect';
 
-export interface StoredFeed {
+export interface ApiFeed {
   id: string;
   author: string;
   title: string;
   description: string;
   url: string;
   image: string;
+}
 
+export interface StoredFeed extends ApiFeed {
   /** Our personal metadata. */
   _meta: {
     lastUpdatedAt: number;
+    lastAccessedAt: number;
     fromSearch: boolean;
     lastSubscribedAt: number;
     subscribed: boolean;
