@@ -31,6 +31,7 @@ export const mutators = {
   setCurrentEpisode,
   addEpisodesForFeed,
   updateEpisodesForFeed,
+  updateEpisode,
   updateProgressForEpisode,
   setPlayerSpeed,
 } satisfies MutatorDefs;
@@ -110,6 +111,15 @@ async function addEpisodesForFeed(
       async (episode) => await tx.set(`episode/${episode.id}`, episode),
     ),
   );
+}
+
+async function updateEpisode(tx: WriteTransaction, episode: Update<Episode>) {
+  const existingEpisode = await getEpisodeById(tx, episode.id);
+  console.debug('Storing episode:', existingEpisode);
+  return await tx.set(`episode/${episode.id}`, {
+    ...existingEpisode,
+    ...episode,
+  });
 }
 
 async function updateEpisodesForFeed(

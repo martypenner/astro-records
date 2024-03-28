@@ -52,6 +52,8 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
         const cache = await caches.open('podcast-episode-cache/v1');
         // Store by episode ID instead of enclosure URL since the URL might change.
         await cache.put(new Request('/episode/' + episode.id), response);
+        // Update the last played time so it doesn't expire right away.
+        r.mutate.updateEpisode({ id: episode.id, lastPlayedAt: Date.now() });
         console.log('Done downloading episode:', episode);
       } catch (error) {
         console.error('Could not download podcast episode:', episode, error);
