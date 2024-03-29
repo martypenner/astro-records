@@ -104,6 +104,7 @@ async function addEpisodesForFeed(
     durationFormatted: formatDuration(episode.duration),
     explicit: episode.explicit === 1,
     currentTime: 0,
+    downloaded: false,
   }));
   console.info('Storing episodes: ', episodes);
   await Promise.all(

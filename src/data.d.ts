@@ -53,6 +53,7 @@ export interface StoredEpisode extends ApiEpisode {
   currentTime: number;
   lastPlayedAt?: number;
   played: boolean;
+  downloaded: boolean;
 }
 
 export interface Episode extends StoredEpisode {

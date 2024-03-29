@@ -71,6 +71,7 @@ const startScheduledTasks = () => {
             new Date(episode.lastPlayedAt),
           );
           await cache.delete(request);
+          await r.mutate.updateEpisode({ id: episodeId, downloaded: false });
         }
       } catch (error) {
         console.error('Error deleting cached episode:', episodeId, error);

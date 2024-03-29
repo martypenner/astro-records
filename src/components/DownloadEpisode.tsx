@@ -2,7 +2,7 @@ import { Episode } from '@/data';
 import { env } from '@/env';
 import { r } from '@/reflect';
 import { useEpisodeById } from '@/reflect/subscriptions';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CircleProgress } from './CircleProgress';
 
 interface DownloadEpisodeProps {
@@ -12,12 +12,20 @@ interface DownloadEpisodeProps {
 export function DownloadEpisode({ id }: DownloadEpisodeProps) {
   const episode = useEpisodeById(r, id);
   const [state, setState] = useState<'empty' | 'downloaded' | 'downloading'>(
-    'empty',
+    episode?.downloaded ? 'downloaded' : 'empty',
   );
   const [progress, setProgress] = useState(0);
   const [indeterminate, setIndeterminate] = useState(false);
 
   const controller = useRef(new AbortController());
+
+  // We initially get null for episodes while indexeddb / replicache are booting up,
+  // so we need to respond to changes in the episode download status.
+  useEffect(() => {
+    if (episode?.downloaded) {
+      setState('downloaded');
+    }
+  }, [episode]);
 
   const onProgress = useCallback(
     (progress: number | 'indeterminate') => {
@@ -61,8 +69,12 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
           const cache = await caches.open('podcast-episode-cache/v1');
           // Store by episode ID instead of enclosure URL since the URL might change.
           await cache.put(new Request('/episode/' + episode.id), response);
-          // Update the last played time so it doesn't expire right away.
-          r.mutate.updateEpisode({ id: episode.id, lastPlayedAt: Date.now() });
+          r.mutate.updateEpisode({
+            id: episode.id,
+            // Update the last played time so it doesn't expire right away.
+            lastPlayedAt: Date.now(),
+            downloaded: true,
+          });
           console.log('Done downloading episode:', episode);
           setState('downloaded');
         } catch (error) {
@@ -89,6 +101,10 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
       if (response) {
         await cache.delete(request);
       }
+      r.mutate.updateEpisode({
+        id: episode.id,
+        downloaded: false,
+      });
     };
 
     const check = async () => {

@@ -93,8 +93,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     setupAudioSource();
 
     // We don't want to react to changes in episode progress.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEpisode?.id]);
+  }, [currentEpisode?.enclosureUrl, currentEpisode?.id]);
 
   // This is the big one:
   // 1) Handle buffering state of new episodes;
