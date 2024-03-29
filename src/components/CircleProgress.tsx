@@ -13,7 +13,7 @@ export function CircleProgress(props: CircleProgressProps) {
     <ProgressBar
       {...props}
       aria-label="Loading…"
-      className="circle-progress text-pink-700 w-8 h-8"
+      className="circle-progress text-pink-700 w-full h-full absolute"
     >
       {({ percentage = 0 }) => (
         <>
