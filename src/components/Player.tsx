@@ -80,6 +80,10 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       const request = new Request('/episode/' + currentEpisode.id);
       const response = await cache.match(request);
       if (response) {
+        // Swap the remote URL for the local one when the downloaded state changes
+        // and resume playing. Note that we don't need to worry about swapping
+        // local -> remote since the browser will play the local file in memory
+        // anyway, even if we delete it while playing.
         const blob = await response.blob();
         url = URL.createObjectURL(blob);
         console.debug('Using cached episode:', currentEpisode.id);
@@ -94,44 +98,11 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     };
 
     setupAudioSource();
-
-    // We don't want to react to changes in episode progress.
-  }, [currentEpisode?.enclosureUrl, currentEpisode?.id]);
-
-  // Swap the remote URL for the local one when the downloaded state changes
-  // and resume playing. Note that we don't need to worry about swapping
-  // local -> remote since the browser will play the local file in memory
-  // anyway, even if we delete it while playing.
-  useEffect(() => {
-    const swapLocalAndRemote = async () => {
-      if (currentEpisode?.downloaded) {
-        const audio = audioPlayer.current;
-        if (!audio) return;
-
-        const cache = await caches.open('podcast-episode-cache/v1');
-        const request = new Request('/episode/' + currentEpisode.id);
-        const response = await cache.match(request);
-        if (response) {
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          console.debug('Switching to cached episode:', currentEpisode.id);
-          // We need to update the current episode time so other effects read the right time.
-          // If we don't, the audio will jump back to the nearest tracked progress for that
-          // episode as soon as we swap to the local source while playing.
-          await r.mutate.updateEpisode({
-            id: currentEpisode.id,
-            currentTime: audio.currentTime,
-          });
-          setAudioSrc(url);
-        }
-      }
-    };
-
-    swapLocalAndRemote();
-
-    // Only want to react to changes in the episode download status.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEpisode?.downloaded]);
+  }, [
+    currentEpisode?.enclosureUrl,
+    currentEpisode?.id,
+    currentEpisode?.downloaded,
+  ]);
 
   // This is the big one:
   // 1) Handle buffering state of new episodes;
