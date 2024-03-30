@@ -8,6 +8,15 @@ export const $showSearchedFeeds = atom<boolean>(false);
 
 export function togglePlaying() {
   $isPlaying.set(!$isPlaying.get());
+
+  r.query(async (tx) => {
+    const currentEpisode = await getCurrentEpisode(tx);
+    if (!currentEpisode) return;
+    await r.mutate.updateFeed({
+      id: currentEpisode.feedId,
+      lastAccessedAt: Date.now(),
+    });
+  });
 }
 
 export function play() {
@@ -31,8 +40,13 @@ export function playEpisode(episode: Episode) {
     $isPlaying.set(isPlaying);
 
     if (episode.id !== currentEpisode?.id) {
-      r.mutate.setCurrentEpisode(episode.id);
+      await r.mutate.setCurrentEpisode(episode.id);
     }
+
+    await r.mutate.updateFeed({
+      id: episode.feedId,
+      lastAccessedAt: Date.now(),
+    });
   });
 }
 

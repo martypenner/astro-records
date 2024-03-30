@@ -25,7 +25,7 @@ export async function loader({ params }: LoaderFunctionArgs) {
     )) as ApiFeed;
     r.mutate.addFeed(newFeed);
   } else {
-    r.mutate.updateFeed({ id: feedId });
+    r.mutate.updateFeed({ id: feedId, lastAccessedAt: Date.now() });
   }
 
   // Fetch new episodes that aren't in the cache yet.

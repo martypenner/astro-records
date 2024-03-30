@@ -80,15 +80,16 @@ async function addFeeds(
   );
 }
 
-async function updateFeedImpl(tx: WriteTransaction, entity: Update<ApiFeed>) {
+async function updateFeedImpl(
+  tx: WriteTransaction,
+  entity: Update<ApiFeed | Feed>,
+) {
   const existingFeed = await mustGetFeed(tx, entity.id);
   const feed = {
     ...existingFeed,
     _meta: {
       ...existingFeed._meta,
-      lastAccessedAt: Date.now(),
       lastUpdatedAt: existingFeed._meta.lastUpdatedAt ?? Date.now(),
-      lastSubscribedAt: existingFeed._meta.lastSubscribedAt ?? Date.now(),
     },
   };
   console.log('Updating feed: ', feed);
