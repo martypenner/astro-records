@@ -34,7 +34,10 @@ export function Component() {
 
   const search = useCallback(
     (event: FormEvent<HTMLFormElement> | ChangeEvent<HTMLInputElement>) => {
-      event.preventDefault();
+      if (event.currentTarget.nodeName.toLowerCase() === 'form') {
+        event.preventDefault();
+      }
+
       const query = event.currentTarget.value;
       if (query.trim().length === 0) {
         navigate('/');
