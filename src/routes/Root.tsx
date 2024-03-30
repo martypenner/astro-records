@@ -2,14 +2,16 @@ import Player from '@/components/Player';
 import ErrorPage from '@/error-page';
 import { r } from '@/reflect';
 import { searchByTerm } from '@/services/podcast-api';
-import { setShowSearchedFeeds } from '@/services/state';
-import { FormEvent, useCallback, useEffect, useRef } from 'react';
+import { debounce } from '@/utils';
+import { ChangeEvent, FormEvent, useCallback, useMemo, useRef } from 'react';
 import {
   ActionFunctionArgs,
+  Form,
   NavLink,
   Outlet,
   ScrollRestoration,
-  useFetcher,
+  useNavigate,
+  useSearchParams,
 } from 'react-router-dom';
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -26,19 +28,23 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export function Component() {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const searchFetcher = useFetcher();
-
-  useEffect(() => {
-    const feeds = searchFetcher.data;
-    setShowSearchedFeeds(feeds != null);
-  }, [searchFetcher.data]);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const debouncedNavigate = useMemo(() => debounce(navigate, 300), [navigate]);
 
   const search = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      searchFetcher.submit(event.currentTarget, { method: 'post' });
+    (event: FormEvent<HTMLFormElement> | ChangeEvent<HTMLInputElement>) => {
+      const query = event.currentTarget.value;
+      if (query.trim().length === 0) {
+        navigate('/');
+      } else {
+        const searchParams = new URLSearchParams();
+        searchParams.set('q', query);
+        // @ts-expect-error: the generic type of debounce is conflicting the second overload of navigate
+        debouncedNavigate('/search?' + searchParams);
+      }
     },
-    [searchFetcher],
+    [navigate, debouncedNavigate],
   );
 
   return (
@@ -112,15 +118,17 @@ export function Component() {
           </div>
 
           <div>
-            <searchFetcher.Form onSubmit={search}>
+            <Form onSubmit={search}>
               <input
                 ref={inputRef}
                 type="search"
                 name="search"
                 placeholder="Search for podcasts..."
+                defaultValue={searchParams.get('q') ?? ''}
                 className="border-pink-300 border px-3 py-2 rounded-md"
+                onChange={search}
               />
-            </searchFetcher.Form>
+            </Form>
           </div>
         </div>
       </nav>

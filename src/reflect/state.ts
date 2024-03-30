@@ -21,23 +21,13 @@ export async function listAllFeeds(tx: ReadTransaction): Promise<Feed[]> {
   return feeds;
 }
 
-export async function listSearchedFeeds(tx: ReadTransaction): Promise<Feed[]> {
-  const feeds = await listAllFeeds(tx);
-  return feeds.filter((feed) => feed._meta.fromSearch);
-}
-
-export async function listRegularFeeds(tx: ReadTransaction): Promise<Feed[]> {
-  const feeds = await listAllFeeds(tx);
-  return feeds.filter((feed) => !feed._meta.fromSearch);
-}
-
 /**
  * List active feeds (have been accessed in the last 10 days) that have not been refreshed within the last 6 hours.
  */
 export async function listStaleFeeds(
   tx: ReadTransaction,
 ): Promise<StoredFeed[]> {
-  const feeds = (await listRegularFeeds(tx)).filter((feed) => {
+  const feeds = (await listAllFeeds(tx)).filter((feed) => {
     return (
       feed._meta.lastAccessedAt > Date.now() - TEN_DAYS &&
       feed._meta.lastUpdatedAt < Date.now() - SIX_HOURS
@@ -51,9 +41,8 @@ export async function listStaleFeeds(
  * This is mainly useful to clean up old cached searched feeds.
  */
 export async function listOldFeeds(tx: ReadTransaction): Promise<StoredFeed[]> {
-  const regularFeeds = await listRegularFeeds(tx);
-  const searchedFeeds = await listSearchedFeeds(tx);
-  const feeds = regularFeeds.concat(searchedFeeds).filter((feed) => {
+  const regularFeeds = await listAllFeeds(tx);
+  const feeds = regularFeeds.filter((feed) => {
     return feed._meta.lastAccessedAt < Date.now() - THIRTY_DAYS;
   });
   return feeds;

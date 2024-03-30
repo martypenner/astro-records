@@ -3,6 +3,7 @@ import { r } from '@/reflect';
 import { useCurrentEpisode, usePlayerSpeed } from '@/reflect/subscriptions';
 import { formatDuration } from '@/services/format-duration';
 import { $isPlaying, pause, togglePlaying } from '@/services/state';
+import { debounce } from '@/utils';
 import { useStore } from '@nanostores/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -404,17 +405,6 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     </div>
   );
 }
-
-const debounce = <TArgs extends unknown[]>(
-  fn: (...args: TArgs) => void,
-  delay: number,
-) => {
-  let timerId: number;
-  return (...args: TArgs) => {
-    clearTimeout(timerId);
-    timerId = setTimeout(() => fn(...args), delay);
-  };
-};
 
 const updateVolume = debounce((volume: number) => {
   r.mutate.setAudioVolume(volume);

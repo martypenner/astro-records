@@ -1,13 +1,11 @@
 import { FeedList } from '@/components/FeedList';
 import { r } from '@/reflect';
-import { listRegularFeeds } from '@/reflect/state';
+import { listAllFeeds } from '@/reflect/state';
 import { useFeeds } from '@/reflect/subscriptions';
 import { trending } from '@/services/podcast-api';
-import { $showSearchedFeeds } from '@/services/state';
-import { useStore } from '@nanostores/react';
 
 export async function loader() {
-  const feeds = await r.query(listRegularFeeds);
+  const feeds = await r.query(listAllFeeds);
   if (feeds.length === 0) {
     // Don't await this so the UI can render right away
     trending().then((feeds) => {
@@ -18,10 +16,6 @@ export async function loader() {
 }
 
 export function Component() {
-  const regularFeeds = useFeeds(r, false);
-  const searchedFeeds = useFeeds(r, true);
-  const showSearched = useStore($showSearchedFeeds);
-  const feeds = showSearched ? searchedFeeds : regularFeeds;
-
+  const feeds = useFeeds(r);
   return <FeedList feeds={feeds} />;
 }

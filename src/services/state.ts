@@ -4,7 +4,6 @@ import { getCurrentEpisode } from '@/reflect/state';
 import { atom } from 'nanostores';
 
 export const $isPlaying = atom(false);
-export const $showSearchedFeeds = atom<boolean>(false);
 
 export function togglePlaying() {
   $isPlaying.set(!$isPlaying.get());
@@ -48,8 +47,4 @@ export function playEpisode(episode: Episode) {
       lastAccessedAt: Date.now(),
     });
   });
-}
-
-export function setShowSearchedFeeds(show: boolean) {
-  $showSearchedFeeds.set(show);
 }

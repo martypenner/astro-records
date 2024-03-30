@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { r } from './reflect';
-import { getEpisodeById, listStaleFeeds } from './reflect/state';
+import { getEpisodeById, listOldFeeds, listStaleFeeds } from './reflect/state';
 import { episodesByPodcastId, podcastById } from './services/podcast-api';
 import { feedApiQueue } from './services/queue';
 import { apiThrottle } from './services/throttle';
@@ -22,6 +22,10 @@ const router = createBrowserRouter([
       {
         path: '/podcast/:id',
         lazy: () => import('./routes/Podcast'),
+      },
+      {
+        path: '/search',
+        lazy: () => import('./routes/Search'),
       },
     ],
   },

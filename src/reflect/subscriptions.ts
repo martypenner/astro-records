@@ -18,20 +18,12 @@ import {
   getEpisodeById,
   getFeed,
   getPlayerSpeed,
+  listAllFeeds,
   listEpisodesForFeed,
-  listRegularFeeds,
-  listSearchedFeeds,
 } from './state';
 
-export function useFeeds(
-  reflect: Reflect<Mutators>,
-  fromSearch: boolean = false,
-): Feed[] {
-  return useSubscribe(
-    reflect,
-    fromSearch ? listSearchedFeeds : listRegularFeeds,
-    [],
-  );
+export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
+  return useSubscribe(reflect, listAllFeeds, []);
 }
 
 export function useFeedById(

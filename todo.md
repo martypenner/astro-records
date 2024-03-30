@@ -7,3 +7,4 @@
 - [ ] auto-download new episodes in subscribed feed
 - [ ] offline using service worker
 - restore scroll position when reloading and navigating
+- cache all images from feeds

@@ -52,13 +52,16 @@ async function addFeed(
   rawFeed: ApiFeed,
   fromSearch: boolean = false,
 ) {
+  const existingFeed = await getFeed(tx, rawFeed.id);
   const feed = {
+    ...existingFeed,
     ...rawFeed,
     _meta: {
       lastUpdatedAt: Date.now(),
       lastAccessedAt: Date.now(),
       lastSubscribedAt: Date.now(),
       subscribed: false,
+      ...existingFeed,
       fromSearch,
     },
   };
