@@ -5,7 +5,7 @@ import { formatDuration } from '@/services/format-duration';
 import { $isPlaying, pause, togglePlaying } from '@/services/state';
 import { debounce } from '@/utils';
 import { useStore } from '@nanostores/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import { NavLink } from 'react-router-dom';
@@ -51,6 +51,38 @@ const PauseIcon = (
       d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z"
       clipRule="evenodd"
     />
+  </svg>
+);
+
+const RewindIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-full h-full absolute"
+  >
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+  </svg>
+);
+
+const FFIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-full h-full absolute"
+  >
+    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+    <path d="M21 3v5h-5" />
   </svg>
 );
 
@@ -241,6 +273,21 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     audio.playbackRate = playerSpeed;
   }, [playerSpeed]);
 
+  const rewind = useCallback(() => {
+    const audio = audioPlayer.current;
+    if (!audio) return;
+
+    audio.currentTime -= 10;
+    setCurrentTime((c) => c - 10);
+  }, []);
+  const fastForward = useCallback(() => {
+    const audio = audioPlayer.current;
+    if (!audio) return;
+
+    audio.currentTime += 30;
+    setCurrentTime((c) => c + 30);
+  }, []);
+
   return (
     <div
       className="fixed bottom-0 left-0 right-0 bg-gray-100 z-10"
@@ -321,6 +368,34 @@ function Player({ feedId, author, title, image }: PlayerProps) {
           </SliderTrack>
         </Slider>
       )}
+
+      <div>
+        <button
+          type="button"
+          className="relative flex items-center justify-center w-8 h-8 focus-visible:ring-2 focus:outline-none focus:ring-black"
+          onClick={() => rewind()}
+        >
+          {RewindIcon}
+          <div className="absolute font-semibold text-xs">
+            <span className="sr-only">Rewind by</span>
+            10
+            <span className="sr-only">seconds</span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          className="relative flex items-center justify-center w-8 h-8 focus-visible:ring-2 focus:outline-none focus:ring-black"
+          onClick={() => fastForward()}
+        >
+          {FFIcon}
+          <div className="absolute font-semibold text-xs">
+            <span className="sr-only">Fast-forward by</span>
+            30
+            <span className="sr-only">seconds</span>
+          </div>
+        </button>
+      </div>
 
       <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between gap-5">
         {/* TODO: maybe link to the episode instead? some sort of slide-in player? */}

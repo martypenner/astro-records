@@ -8,3 +8,9 @@
 - [ ] offline using service worker
 - restore scroll position when reloading and navigating
 - cache all images from feeds
+- respond to external media controls pausing / playing / rewind / ff
+
+## Clean up UI
+
+- episodes link to actual episode page
+- move speed / sleep / ff / rewind / cast controls to the right spots (vertical over horizontal)
