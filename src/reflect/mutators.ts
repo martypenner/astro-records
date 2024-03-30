@@ -18,9 +18,16 @@
 
 import type { ApiEpisode, ApiFeed, Episode, Feed, StoredEpisode } from '@/data';
 import { formatDuration } from '@/services/format-duration';
-import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
-import { getEpisodeById, mustGetFeed, setFeed, updateFeed } from './state';
 import { Update } from '@rocicorp/rails';
+import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
+import {
+  deleteFeed,
+  getEpisodeById,
+  getFeed,
+  mustGetFeed,
+  setFeed,
+  updateFeed,
+} from './state';
 
 export const mutators = {
   addFeed,
@@ -28,6 +35,7 @@ export const mutators = {
   subscribeToFeed,
   unsubscribeFromFeed,
   updateFeed: updateFeedImpl,
+  deleteFeed,
   setCurrentEpisode,
   addEpisodesForFeed,
   updateEpisodesForFeed,

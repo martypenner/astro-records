@@ -97,6 +97,16 @@ const startScheduledTasks = () => {
         }),
       );
     }
+
+    // Clean old podcasts out of the store.
+    const oldFeeds = await r.query((tx) => listOldFeeds(tx));
+    for (const feed of oldFeeds) {
+      feedApiQueue.add(async () => {
+        console.log('Clearing store data for podcast:', feed.id);
+        await r.mutate.deleteFeed(feed.id);
+      });
+    }
+
     await feedApiQueue.onEmpty();
     console.debug('Queue emptied; starting next timer');
 

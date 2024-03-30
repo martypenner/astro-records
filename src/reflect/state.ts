@@ -3,6 +3,7 @@ import { generate } from '@rocicorp/rails';
 import { ReadTransaction } from '@rocicorp/reflect';
 
 const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
+const THIRTY_DAYS = 60 * 60 * 24 * 30 * 1000;
 const SIX_HOURS = 60 * 60 * 6 * 1000;
 
 export const {
@@ -41,6 +42,19 @@ export async function listStaleFeeds(
       feed._meta.lastAccessedAt > Date.now() - TEN_DAYS &&
       feed._meta.lastUpdatedAt < Date.now() - SIX_HOURS
     );
+  });
+  return feeds;
+}
+
+/**
+ * List old podcasts, i.e. ones that haven't been accessed in 30 days.
+ * This is mainly useful to clean up old cached searched feeds.
+ */
+export async function listOldFeeds(tx: ReadTransaction): Promise<StoredFeed[]> {
+  const regularFeeds = await listRegularFeeds(tx);
+  const searchedFeeds = await listSearchedFeeds(tx);
+  const feeds = regularFeeds.concat(searchedFeeds).filter((feed) => {
+    return feed._meta.lastAccessedAt < Date.now() - THIRTY_DAYS;
   });
   return feeds;
 }
