@@ -39,10 +39,10 @@ export function playEpisode(episode: Episode) {
     $isPlaying.set(isPlaying);
 
     if (episode.id !== currentEpisode?.id) {
-      await r.mutate.setCurrentEpisode(episode.id);
+      r.mutate.setCurrentEpisode(episode.id);
     }
 
-    await r.mutate.updateFeed({
+    r.mutate.updateFeed({
       id: episode.feedId,
       lastAccessedAt: Date.now(),
     });
