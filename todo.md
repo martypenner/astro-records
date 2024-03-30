@@ -10,4 +10,4 @@
 - [ ] subscribe to ids only in the feed list, and have the feed items themselves subscribe to their feed by id (should cut down in the extreme case on over-subscribing, and can open up e.g. virtualization if needed)
 - [ ] auto-download new episodes in subscribed feed
 - [ ] offline using service worker
-- [ ] switch to offline cached file once we've finished downloading. this will be tricky, since I think the blob URL can change page load to page load, meaning we can't store it. if we mutate the episode to mark it as downloaded, we need to be careful about falling back to the remote URL when the user evicts their cache / storage.
+- restore scroll position when reloading and navigating

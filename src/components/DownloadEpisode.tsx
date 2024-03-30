@@ -112,6 +112,7 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
 
       switch (state) {
         case 'empty': {
+          controller.current.abort();
           controller.current = new AbortController();
           triggerDownload(controller.current.signal);
           break;
