@@ -101,7 +101,7 @@ async function addEpisodesForFeed(
 ) {
   const episodes = rawEpisodes.map((episode) => ({
     ...episode,
-    datePublished: new Date(episode.datePublished).toISOString(),
+    datePublished: Number(episode.datePublished) * 1000,
     durationFormatted: formatDuration(episode.duration),
     explicit: episode.explicit === 1,
     currentTime: 0,
@@ -135,7 +135,7 @@ async function updateEpisodesForFeed(
       ...episode,
       datePublished:
         episode.datePublished != null
-          ? new Date(episode.datePublished).toISOString()
+          ? episode.datePublished * 1000
           : existingEpisode?.datePublished,
       durationFormatted:
         episode.duration != null

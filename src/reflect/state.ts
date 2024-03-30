@@ -60,7 +60,7 @@ export async function listEpisodesForFeed(
     (await tx.scan({ prefix: `episode/` }).toArray()) as StoredEpisode[]
   )
     .filter((episode) => episode.feedId === feedId)
-    .sort((a, b) => b.datePublished.localeCompare(a.datePublished));
+    .sort((a, b) => b.datePublished - a.datePublished);
   return list as Episode[];
 }
 

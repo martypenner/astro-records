@@ -33,7 +33,8 @@ export interface ApiEpisode {
   author: string;
   image?: string;
   feedImage?: string;
-  datePublished: string;
+  /** This is the number of SECONDS - not ms - since unix epoch. */
+  datePublished: number;
   duration: number;
   /** The episode number within the broader feed, e.g. 605. */
   episode: number;
