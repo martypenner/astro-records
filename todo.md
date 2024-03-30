@@ -5,7 +5,6 @@
 - [ ] track which ones are watched
 - [ ] add transcripts somehow
 - [ ] volume control
-- [ ] ensure uniform aspect ratio of podcast and episode images
 - [ ] page titles
 - [ ] subscribe to ids only in the feed list, and have the feed items themselves subscribe to their feed by id (should cut down in the extreme case on over-subscribing, and can open up e.g. virtualization if needed)
 - [ ] auto-download new episodes in subscribed feed

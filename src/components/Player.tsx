@@ -55,6 +55,8 @@ const PauseIcon = (
 
 type PlayerProps = Pick<Episode, 'feedId' | 'author' | 'title' | 'image'>;
 
+const initialVolume = Number((await r.query((tx) => tx.get('/volume'))) ?? 1);
+
 function Player({ feedId, author, title, image }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
   const currentEpisode = useCurrentEpisode(r);
@@ -316,31 +318,37 @@ function Player({ feedId, author, title, image }: PlayerProps) {
         )}
       </div>
 
-      {/* <div className="flex-1 bg-gray-200 h-3 dark:bg-gray-700"> */}
-      {/*   <div */}
-      {/*     aria-orientation="horizontal" */}
-      {/*     role="slider" */}
-      {/*     aria-label="audio timeline" */}
-      {/*     aria-valuemin={0} */}
-      {/*     aria-valuemax={ */}
-      {/*       audioPlayer.current && audioPlayer.current.duration */}
-      {/*         ? Math.floor(audioPlayer.current.duration) */}
-      {/*         : 0 */}
-      {/*     } */}
-      {/*     aria-valuenow={ */}
-      {/*       audioPlayer.current && audioPlayer.current.currentTime */}
-      {/*         ? Math.floor(audioPlayer.current.currentTime) */}
-      {/*         : 0 */}
-      {/*     } */}
-      {/*     aria-valuetext={`${ */}
-      {/*       audioPlayer.current && audioPlayer.current.currentTime */}
-      {/*         ? Math.floor(audioPlayer.current.currentTime) */}
-      {/*         : 0 */}
-      {/*     } seconds`} */}
-      {/*     className="bg-pink-700 h-full" */}
-      {/*     style={{ width: `${progress}%` }} */}
-      {/*   ></div> */}
-      {/* </div> */}
+      {/* Volume */}
+      {audioSrc != null && (
+        <Slider
+          aria-label="Audio volume"
+          className="w-full"
+          defaultValue={initialVolume}
+          minValue={0}
+          maxValue={1}
+          step={0.0001}
+          onChange={(volume: number) => {
+            if (!audioPlayer.current) return;
+            audioPlayer.current.volume = volume;
+            updateVolume(volume);
+          }}
+        >
+          <SliderTrack className="relative w-full h-7">
+            {({ state }) => (
+              <>
+                {/* track */}
+                <div className="absolute h-2 top-[50%] translate-y-[-50%] w-full rounded-full bg-white/40" />
+                {/* fill */}
+                <div
+                  className="absolute h-2 top-[50%] translate-y-[-50%] rounded-full bg-white"
+                  style={{ width: state.getThumbPercent(0) * 100 + '%' }}
+                />
+                <SliderThumb className="h-5 w-5 top-[50%] rounded-full border border-solid border-purple-800/75 bg-white transition dragging:bg-purple-100 outline-none focus-visible:ring-2 ring-black" />
+              </>
+            )}
+          </SliderTrack>
+        </Slider>
+      )}
 
       <div className="container mx-auto max-w-screen-lg px-3 py-2 sm:px-6 sm:py-4 flex items-center justify-between gap-5">
         {/* TODO: maybe link to the episode instead? some sort of slide-in player? */}
@@ -425,3 +433,18 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     </div>
   );
 }
+
+const debounce = <TArgs extends unknown[]>(
+  fn: (...args: TArgs) => void,
+  delay: number,
+) => {
+  let timerId: number;
+  return (...args: TArgs) => {
+    clearTimeout(timerId);
+    timerId = setTimeout(() => fn(...args), delay);
+  };
+};
+
+const updateVolume = debounce((volume: number) => {
+  r.mutate.setAudioVolume(volume);
+}, 300);

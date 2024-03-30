@@ -34,6 +34,7 @@ export const mutators = {
   updateEpisode,
   updateProgressForEpisode,
   setPlayerSpeed,
+  setAudioVolume,
 } satisfies MutatorDefs;
 
 export type Mutators = typeof mutators;
@@ -216,4 +217,9 @@ async function unsubscribeFromFeed(tx: WriteTransaction, feedId: Feed['id']) {
 async function setPlayerSpeed(tx: WriteTransaction, speed: number) {
   console.log('Setting player speed:', speed);
   await tx.set(`/player-speed`, speed);
+}
+
+export async function setAudioVolume(tx: WriteTransaction, volume: number) {
+  console.log('Updating volume:', volume);
+  await tx.set(`/volume`, volume);
 }
