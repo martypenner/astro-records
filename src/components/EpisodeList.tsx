@@ -55,10 +55,12 @@ export default function EpisodeList({ podcastId }: Props) {
               <div className="flex basis grow w-full items-center gap-4">
                 <div className="flex flex-col justify-start items-start">
                   <span className="text-sm mb-1">
-                    {episode.episode}
                     {new Date(episode.datePublished).toLocaleDateString()}
                   </span>
-                  <span className="font-medium text-left">{episode.title}</span>
+                  <span className="font-medium text-left">
+                    {episode.episode != null ? episode.episode + ': ' : ''}
+                    {episode.title}
+                  </span>
                 </div>
                 <span className="sr-only"> - </span>
                 <span className="text-gray-500 ml-auto">
