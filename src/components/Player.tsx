@@ -172,7 +172,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
 
       const now = Date.now();
       const currentTime = audio.currentTime;
-      // Throttle updates to every 1 second
+      // Throttle updates
       if (now - lastUpdatedLocalTime >= localUpdateInterval) {
         lastUpdatedLocalTime = Date.now();
         setCurrentTime(currentTime);
