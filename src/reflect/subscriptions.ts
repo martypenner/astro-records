@@ -33,6 +33,19 @@ export function useFeedById(
   return useSubscribe(reflect, (tx) => getFeed(tx, key), null);
 }
 
+export function useEpisodeForFeed(
+  reflect: Reflect<Mutators>,
+  episodeId: Episode['id'],
+): Episode | null {
+  const episode = useSubscribe(
+    reflect,
+    (tx) => getEpisodeById(tx, episodeId),
+    null,
+  );
+
+  return episode;
+}
+
 export function useEpisodesForFeed(
   reflect: Reflect<Mutators>,
   feedId: Feed['id'],

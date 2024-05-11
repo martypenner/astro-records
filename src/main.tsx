@@ -20,8 +20,12 @@ const router = createBrowserRouter([
         lazy: () => import('./routes/Home'),
       },
       {
-        path: '/podcast/:id',
+        path: '/podcast/:feedId',
         lazy: () => import('./routes/Podcast'),
+      },
+      {
+        path: '/podcast/:feedId/episode/:episodeId',
+        lazy: () => import('./routes/Episode'),
       },
       {
         path: '/search',

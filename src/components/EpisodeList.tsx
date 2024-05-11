@@ -3,8 +3,9 @@ import { r } from '@/reflect';
 import { useCurrentEpisode, useEpisodesForFeed } from '@/reflect/subscriptions';
 import { useStore } from '@nanostores/react';
 import { ReactNode, useMemo } from 'react';
-import { $isPlaying, playEpisode } from '../services/state';
+import { $isPlaying } from '../services/state';
 import { DownloadEpisode } from './DownloadEpisode';
+import { Link } from 'react-router-dom';
 
 type Props = {
   podcastId: Feed['id'];
@@ -31,16 +32,15 @@ export default function EpisodeList({ podcastId }: Props) {
           {children}
         </div>
       ) : (
-        <button
-          type="button"
+        <Link
+          to={`/podcast/${podcastId}/episode/${episode.id}`}
           className={`hover:bg-gray-200 ${isCurrentEpisode ? 'bg-pink-200' : ''} focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center`}
           aria-current={isCurrentEpisode}
-          onClick={() => playEpisode(episode)}
         >
           {children}
-        </button>
+        </Link>
       );
-  }, []);
+  }, [podcastId]);
 
   return (
     <ul className="text-xl" aria-label="Episode list">
