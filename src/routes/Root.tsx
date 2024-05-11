@@ -34,6 +34,7 @@ export function Component() {
 
   const search = useCallback(
     (event: FormEvent<HTMLFormElement> | ChangeEvent<HTMLInputElement>) => {
+      event.preventDefault();
       const query = event.currentTarget.value;
       if (query.trim().length === 0) {
         navigate('/');
@@ -122,7 +123,7 @@ export function Component() {
               <input
                 ref={inputRef}
                 type="search"
-                name="search"
+                name="q"
                 placeholder="Search for podcasts..."
                 defaultValue={searchParams.get('q') ?? ''}
                 className="border-pink-300 border px-3 py-2 rounded-md"
