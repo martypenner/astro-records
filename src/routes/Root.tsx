@@ -1,6 +1,5 @@
 import Player from '@/components/Player';
 import ErrorPage from '@/error-page';
-import { r } from '@/reflect';
 import { searchByTerm } from '@/services/podcast-api';
 import { debounce } from '@/utils';
 import { ChangeEvent, FormEvent, useCallback, useMemo, useRef } from 'react';
@@ -22,7 +21,6 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   const feeds = await searchByTerm(search);
-  r.mutate.addFeeds({ feeds, fromSearch: true });
   return feeds;
 }
 

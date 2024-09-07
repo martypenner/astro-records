@@ -1,10 +1,12 @@
-import type { Episode } from '@/data';
+import type { ApiEpisode } from '@/data';
 import { r } from '@/reflect';
 import { useCurrentEpisode, usePlayerSpeed } from '@/reflect/subscriptions';
 import { formatDuration } from '@/services/format-duration';
+import { episodeById } from '@/services/podcast-api';
 import { $isPlaying, pause, togglePlaying } from '@/services/state';
 import { debounce } from '@/utils';
 import { useStore } from '@nanostores/react';
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
@@ -13,11 +15,40 @@ import { NavLink } from 'react-router-dom';
 export default function PlayerGuard() {
   const currentEpisode = useCurrentEpisode(r);
 
+  const {
+    isPending,
+    isError,
+    data: episode,
+    error,
+  } = useQuery({
+    queryKey: ['podcast', 'episode', currentEpisode?.id],
+    queryFn: async () => {
+      if (currentEpisode == null) return null;
+
+      const episode = await episodeById(currentEpisode.id);
+      await r.mutate.addEpisodesForFeed([episode]);
+      return episode;
+    },
+    enabled: currentEpisode != null,
+  });
+
   if (currentEpisode == null) {
     return;
   }
 
-  return <Player {...currentEpisode} />;
+  if (isPending) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  if (!episode) {
+    return;
+  }
+
+  return <Player {...episode} />;
 }
 
 const PlayIcon = (
@@ -86,11 +117,21 @@ const FFIcon = (
   </svg>
 );
 
-type PlayerProps = Pick<Episode, 'feedId' | 'author' | 'title' | 'image'>;
+type PlayerProps = Pick<
+  ApiEpisode,
+  'feedId' | 'author' | 'title' | 'image' | 'enclosureUrl' | 'duration'
+>;
 
 const initialVolume = Number((await r.query((tx) => tx.get('/volume'))) ?? 1);
 
-function Player({ feedId, author, title, image }: PlayerProps) {
+function Player({
+  feedId,
+  author,
+  title,
+  image,
+  enclosureUrl,
+  duration: episodeDuration,
+}: PlayerProps) {
   const isPlaying = useStore($isPlaying);
   const currentEpisode = useCurrentEpisode(r);
   const playerSpeed = usePlayerSpeed(r);
@@ -108,7 +149,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       if (currentEpisode?.id == null) return;
 
       // Use the cached source if available.
-      let url = currentEpisode.enclosureUrl;
+      let url = enclosureUrl;
       const cache = await caches.open('podcast-episode-cache/v1');
       const request = new Request('/episode/' + currentEpisode.id);
       const response = await cache.match(request);
@@ -131,11 +172,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
     };
 
     setupAudioSource();
-  }, [
-    currentEpisode?.enclosureUrl,
-    currentEpisode?.id,
-    currentEpisode?.downloaded,
-  ]);
+  }, [enclosureUrl, currentEpisode?.id, currentEpisode?.downloaded]);
 
   // This is the big one:
   // 1) Handle buffering state of new episodes;
@@ -187,7 +224,6 @@ function Player({ feedId, author, title, image }: PlayerProps) {
           r.mutate.updateProgressForEpisode({
             id: currentEpisode.id,
             progress: 100,
-            played: true,
           });
         }
       } else {
@@ -210,7 +246,6 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       r.mutate.updateProgressForEpisode({
         id: currentEpisode.id,
         progress: 100,
-        played: true,
       });
     };
 
@@ -302,7 +337,7 @@ function Player({ feedId, author, title, image }: PlayerProps) {
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-2 flex justify-center">
         <span className="text-gray-50">
           {formatDuration(currentTime, true)} /{' '}
-          {currentEpisode?.durationFormatted ?? ''}
+          {formatDuration(episodeDuration * 1000)}
         </span>
 
         {audioSrc != null && (

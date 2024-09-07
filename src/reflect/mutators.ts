@@ -17,7 +17,6 @@
 // precedence over the client-side optimistic result.
 
 import type { ApiEpisode, ApiFeed, Episode, Feed, StoredEpisode } from '@/data';
-import { formatDuration } from '@/services/format-duration';
 import { Update } from '@rocicorp/rails';
 import type { MutatorDefs, WriteTransaction } from '@rocicorp/reflect';
 import {
@@ -47,25 +46,15 @@ export const mutators = {
 
 export type Mutators = typeof mutators;
 
-async function addFeed(
-  tx: WriteTransaction,
-  rawFeed: ApiFeed,
-  fromSearch: boolean = false,
-) {
+async function addFeed(tx: WriteTransaction, rawFeed: ApiFeed) {
   const existingFeed = await getFeed(tx, rawFeed.id);
   const feed = {
-    ...existingFeed,
-    ...rawFeed,
-    _meta: {
-      lastUpdatedAt: Date.now(),
-      lastAccessedAt: Date.now(),
-      lastSubscribedAt: Date.now(),
-      subscribed: false,
-      ...existingFeed,
-      fromSearch,
-    },
+    id: existingFeed?.id ?? rawFeed.id,
+    lastUpdatedAt: Date.now(),
+    lastAccessedAt: Date.now(),
+    subscribed: false,
   };
-  console.log('Storing feed: ', feed);
+  console.log('Storing feed meta: ', feed);
   await setFeed(tx, feed);
 }
 
@@ -73,10 +62,8 @@ async function addFeeds(
   tx: WriteTransaction,
   {
     feeds,
-    fromSearch = false,
   }: {
     feeds: Feed[];
-    fromSearch?: boolean;
   },
 ) {
   await Promise.all(
@@ -85,23 +72,18 @@ async function addFeeds(
         tx,
         // Fixing a bug in podcast API by ensuring we parse JSON for occasional JSON strings
         typeof feed === 'string' ? JSON.parse(feed) : feed,
-        fromSearch,
       ),
     ),
   );
 }
 
-async function updateFeedImpl(
-  tx: WriteTransaction,
-  entity: Update<ApiFeed | Feed>,
-) {
+async function updateFeedImpl(tx: WriteTransaction, entity: Update<Feed>) {
   const existingFeed = await mustGetFeed(tx, entity.id);
   const feed = {
     ...existingFeed,
-    _meta: {
-      ...existingFeed._meta,
-      lastUpdatedAt: existingFeed._meta.lastUpdatedAt ?? Date.now(),
-    },
+    ...entity,
+    lastUpdatedAt:
+      existingFeed.lastUpdatedAt ?? entity.lastUpdatedAt ?? Date.now(),
   };
   console.log('Updating feed: ', feed);
   await updateFeed(tx, feed);
@@ -111,12 +93,11 @@ async function addEpisodesForFeed(
   tx: WriteTransaction,
   rawEpisodes: ApiEpisode[],
 ) {
-  const episodes = rawEpisodes.map((episode) => ({
-    ...episode,
-    datePublished: Number(episode.datePublished) * 1000,
-    durationFormatted: formatDuration(episode.duration),
-    explicit: episode.explicit === 1,
+  const episodes: StoredEpisode[] = rawEpisodes.map((episode) => ({
+    id: episode.id,
+    feedId: episode.feedId,
     currentTime: 0,
+    lastPlayedAt: 0,
     downloaded: false,
   }));
   console.info('Storing episodes: ', episodes);
@@ -138,23 +119,17 @@ async function updateEpisode(tx: WriteTransaction, episode: Update<Episode>) {
 
 async function updateEpisodesForFeed(
   tx: WriteTransaction,
-  rawEpisodes: Update<ApiEpisode>[],
+  rawEpisodes: Update<Pick<ApiEpisode, 'id' | 'feedId'>>[],
 ) {
   const episodes = rawEpisodes.map(async (episode) => {
     const existingEpisode = await getEpisodeById(tx, episode.id);
     return {
+      id: episode.id,
+      feedId: episode.feedId,
+      currentTime: 0,
+      lastPlayedAt: 0,
+      downloaded: false,
       ...existingEpisode,
-      ...episode,
-      datePublished:
-        episode.datePublished != null
-          ? episode.datePublished * 1000
-          : existingEpisode?.datePublished,
-      durationFormatted:
-        episode.duration != null
-          ? formatDuration(episode.duration)
-          : existingEpisode?.durationFormatted,
-      explicit: episode.explicit === 1,
-      currentTime: existingEpisode?.currentTime,
     };
   });
   await Promise.all(
@@ -179,20 +154,17 @@ async function updateProgressForEpisode(
   {
     id,
     progress,
-    played = false,
   }: {
     id: Episode['id'];
     progress: number;
-    played?: boolean;
   },
 ) {
-  console.debug('Updating progress for episode:', id, progress, played);
+  console.debug('Updating progress for episode:', id, progress);
   const storedEpisode = (await tx.get(`episode/${id}`)) as StoredEpisode;
   if (storedEpisode) {
     await tx.set(`episode/${id}`, {
       ...storedEpisode,
       currentTime: progress,
-      played,
       lastPlayedAt: Date.now(),
     });
   }
@@ -202,12 +174,9 @@ async function subscribeToFeed(tx: WriteTransaction, feedId: Feed['id']) {
   const storedFeed = await mustGetFeed(tx, feedId);
   const feed = {
     ...storedFeed,
-    _meta: {
-      ...storedFeed._meta,
-      subscribed: true,
-      lastSubscribedAt: Date.now(),
-      lastAccessedAt: Date.now(),
-    },
+    subscribed: true,
+    lastSubscribedAt: Date.now(),
+    lastAccessedAt: Date.now(),
   };
   console.log('Subscribing to feed:', feed);
   await updateFeed(tx, feed);
@@ -217,10 +186,7 @@ async function unsubscribeFromFeed(tx: WriteTransaction, feedId: Feed['id']) {
   const storedFeed = await mustGetFeed(tx, feedId);
   const feed = {
     ...storedFeed,
-    _meta: {
-      ...storedFeed._meta,
-      subscribed: false,
-    },
+    subscribed: false,
   };
   console.log('Unsubscribing from feed:', feed);
   await updateFeed(tx, feed);

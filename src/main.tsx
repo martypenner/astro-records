@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
@@ -6,9 +7,16 @@ import { getEpisodeById, listOldFeeds, listStaleFeeds } from './reflect/state';
 import { episodesByPodcastId, podcastById } from './services/podcast-api';
 import { feedApiQueue } from './services/queue';
 import { apiThrottle } from './services/throttle';
+import { persistQueryClient } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
 import './styles/tailwind.css';
 import './styles/transitions.css';
+
+const SECONDS = 1000;
+const MINUTES = 60 * SECONDS;
+const HOURS = 60 * MINUTES;
+const DAYS = 24 * HOURS;
 
 const router = createBrowserRouter([
   {
@@ -35,10 +43,36 @@ const router = createBrowserRouter([
   },
 ]);
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      networkMode: 'offlineFirst',
+      gcTime: 30 * DAYS,
+      staleTime: 10 * MINUTES,
+    },
+    mutations: {
+      networkMode: 'offlineFirst',
+      gcTime: 30 * DAYS,
+    },
+  },
+});
+
+if (typeof document !== 'undefined') {
+  const localStoragePersister = createSyncStoragePersister({
+    storage: window.localStorage,
+  });
+  persistQueryClient({
+    queryClient,
+    persister: localStoragePersister,
+  });
+}
+
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </React.StrictMode>,
 );
 
@@ -49,9 +83,6 @@ if (import.meta.hot) {
     root.unmount();
   });
 }
-
-const FIVE_MINUTES = 60 * 5 * 1000;
-const TEN_DAYS = 60 * 60 * 24 * 10 * 1000;
 
 const startScheduledTasks = () => {
   requestIdleCallback(async () => {
@@ -71,7 +102,7 @@ const startScheduledTasks = () => {
           await cache.delete(request);
         } else if (
           episode.lastPlayedAt &&
-          episode.lastPlayedAt < Date.now() - TEN_DAYS
+          episode.lastPlayedAt < Date.now() - 10 * DAYS
         ) {
           console.debug(
             'Clearing cached episode:',
@@ -86,40 +117,40 @@ const startScheduledTasks = () => {
       }
     }
 
-    // Check for new episodes and podcast info for frequently accessed podcasts.
-    const staleFeeds = await r.query((tx) => listStaleFeeds(tx));
-    for (const feed of staleFeeds) {
-      feedApiQueue.add(
-        apiThrottle(async () => {
-          console.log('Fetching podcast info for podcast:', feed.id);
-          const updatedFeed = await podcastById(feed.id);
-          await r.mutate.updateFeed(updatedFeed);
-        }),
-      );
-      feedApiQueue.add(
-        apiThrottle(async () => {
-          console.log('Fetching episodes info for podcast:', feed.id);
-          const episodes = await episodesByPodcastId(feed.id);
-          console.log('e', episodes.length);
-          await r.mutate.updateEpisodesForFeed(episodes);
-        }),
-      );
-    }
+    // // Check for new episodes and podcast info for frequently accessed podcasts.
+    // const staleFeeds = await r.query((tx) => listStaleFeeds(tx));
+    // for (const feed of staleFeeds) {
+    //   feedApiQueue.add(
+    //     apiThrottle(async () => {
+    //       console.log('Fetching podcast info for podcast:', feed.id);
+    //       const updatedFeed = await podcastById(feed.id);
+    //       await r.mutate.updateFeed(updatedFeed);
+    //     }),
+    //   );
+    //   feedApiQueue.add(
+    //     apiThrottle(async () => {
+    //       console.log('Fetching episodes info for podcast:', feed.id);
+    //       const episodes = await episodesByPodcastId(feed.id);
+    //       console.log('e', episodes.length);
+    //       await r.mutate.updateEpisodesForFeed(episodes);
+    //     }),
+    //   );
+    // }
 
     // Clean old podcasts out of the store.
-    const oldFeeds = await r.query((tx) => listOldFeeds(tx));
-    for (const feed of oldFeeds) {
-      feedApiQueue.add(async () => {
-        console.log('Clearing store data for podcast:', feed.id);
-        await r.mutate.deleteFeed(feed.id);
-      });
-    }
+    // const oldFeeds = await r.query((tx) => listOldFeeds(tx));
+    // for (const feed of oldFeeds) {
+    //   feedApiQueue.add(async () => {
+    //     console.log('Clearing store data for podcast:', feed.id);
+    //     await r.mutate.deleteFeed(feed.id);
+    //   });
+    // }
 
     await feedApiQueue.onEmpty();
     console.debug('Queue emptied; starting next timer');
 
     // Queue up the next one
-    setTimeout(startScheduledTasks, FIVE_MINUTES);
+    setTimeout(startScheduledTasks, 5 * MINUTES);
   });
 };
 startScheduledTasks();

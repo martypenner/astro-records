@@ -1,21 +1,25 @@
 import { FeedList } from '@/components/FeedList';
-import { r } from '@/reflect';
-import { listAllFeeds } from '@/reflect/state';
-import { useFeeds } from '@/reflect/subscriptions';
 import { trending } from '@/services/podcast-api';
-
-export async function loader() {
-  const feeds = await r.query(listAllFeeds);
-  if (feeds.length === 0) {
-    // Don't await this so the UI can render right away
-    trending().then((feeds) => {
-      r.mutate.addFeeds({ feeds });
-    });
-  }
-  return null;
-}
+import { useQuery } from '@tanstack/react-query';
 
 export function Component() {
-  const feeds = useFeeds(r);
+  const {
+    isPending,
+    isError,
+    data: feeds,
+    error,
+  } = useQuery({
+    queryKey: ['trending'],
+    queryFn: () => trending(),
+  });
+
+  if (isPending) {
+    return null;
+  }
+
+  if (isError) {
+    return <span>Error: {error.message}</span>;
+  }
+
   return <FeedList feeds={feeds} />;
 }

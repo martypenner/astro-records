@@ -1,52 +1,14 @@
 import EpisodeList from '@/components/EpisodeList';
 import PlayButton from '@/components/PlayButton';
-import { ApiFeed } from '@/data';
 import { r } from '@/reflect';
-import { getFeed, listEpisodesForFeed } from '@/reflect/state';
-import {
-  useCurrentEpisode,
-  useEpisodesForFeed,
-  useFeedById,
-} from '@/reflect/subscriptions';
+import { getFeed } from '@/reflect/state';
+import { useCurrentEpisode } from '@/reflect/subscriptions';
 import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
-import { feedApiQueue } from '@/services/queue';
-import { apiThrottle } from '@/services/throttle';
 import { useStore } from '@nanostores/react';
-import { LoaderFunctionArgs, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
 import { $isPlaying } from '../services/state';
-
-export async function loader({ params }: LoaderFunctionArgs) {
-  const { feedId = '' } = params;
-  const feed = await r.query((tx) => getFeed(tx, feedId));
-  if (feed == null) {
-    const newFeed = (await feedApiQueue.add(
-      apiThrottle(() => podcastById(feedId)),
-    )) as ApiFeed;
-    r.mutate.addFeed(newFeed);
-  } else {
-    r.mutate.updateFeed({ id: feedId, lastAccessedAt: Date.now() });
-  }
-
-  // Fetch new episodes that aren't in the cache yet.
-  const episodes = await r.query((tx) => listEpisodesForFeed(tx, feedId));
-  if (episodes.length === 0) {
-    try {
-      feedApiQueue.add(
-        apiThrottle(() =>
-          // Don't await this; let the UI render right away
-          episodesByPodcastId(feedId).then((episodes) =>
-            r.mutate.addEpisodesForFeed(episodes),
-          ),
-        ),
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  return episodes;
-}
 
 export function Component() {
   const { feedId } = useParams();
@@ -60,12 +22,63 @@ export function Component() {
     'absolute top-0 opacity-0 vynil-image vynil-animation-in' +
     (isPlayingCurrent ? '-spinning' : '');
 
-  const feed = useFeedById(r, feedId);
-  const episodes = useEpisodesForFeed(r, feedId);
+  const podcastDetailsQuery = useQuery({
+    queryKey: ['podcast', 'details', feedId],
+    queryFn: async () => {
+      const [podcast, meta] = await Promise.all([
+        podcastById(feedId),
+        r.query((tx) => getFeed(tx, feedId)),
+      ]);
+      const now = Date.now();
+      if (!meta) {
+        await r.mutate.addFeed(podcast);
+      } else {
+        await r.mutate.updateFeed({
+          id: feedId,
+          lastAccessedAt: now,
+        });
+      }
 
-  if (feed == null) {
-    // TODO: throw error or show suspense instead, since the loader pre-loads missing feeds
-    return null;
+      return {
+        podcast,
+        meta,
+      };
+    },
+  });
+  const podcastEpisodesQuery = useQuery({
+    queryKey: ['podcast', 'episodes', feedId],
+    queryFn: async () => {
+      const episodes = await episodesByPodcastId(feedId);
+      await r.mutate.addEpisodesForFeed(episodes);
+      return episodes;
+    },
+  });
+
+  if (podcastDetailsQuery.isPending || podcastEpisodesQuery.isPending) {
+    return <div>Loading...</div>;
+  }
+
+  if (podcastDetailsQuery.isError) {
+    return (
+      <div>
+        Error loading podcast details: {podcastDetailsQuery.error.message}
+      </div>
+    );
+  }
+
+  if (podcastEpisodesQuery.isError) {
+    return (
+      <div>
+        Error loading podcast episodes: {podcastEpisodesQuery.error.message}
+      </div>
+    );
+  }
+
+  const { podcast, meta } = podcastDetailsQuery.data;
+  const episodes = podcastEpisodesQuery.data;
+
+  if (!podcast || !episodes) {
+    return <div>No data available</div>;
   }
 
   return (
@@ -73,8 +86,8 @@ export function Component() {
       <div className="container mx-auto max-w-screen-lg px-6 lg:px-0 flex flex-col items-start md:flex-row pt-8 pb-12">
         <div className="relative shadow-xl mr-32 w-72 md:w-auto">
           <img
-            src={feed.image}
-            alt={`${feed.author} - ${feed.title}`}
+            src={podcast.image}
+            alt={`${podcast.author} - ${podcast.title}`}
             aria-hidden="true"
             width="400"
             height="400"
@@ -95,11 +108,11 @@ export function Component() {
         <div className="flex-1 flex flex-col justify-end pt-8">
           <h1 id="page-heading">
             <div className="text-5xl font-bold tracking-tight text-gray-900">
-              {feed.title}
+              {podcast.title}
             </div>
-            <div className="mt-3 text-3xl">{feed.author}</div>
+            <div className="mt-3 text-3xl">{podcast.author}</div>
           </h1>
-          <div className="mt-2 text-lg">{feed.description}</div>
+          <div className="mt-2 text-lg">{podcast.description}</div>
           <div className="mt-3 flex">
             {episodes.length > 0 && (
               <PlayButton episode={currentEpisode ?? episodes[0]} />
@@ -124,9 +137,9 @@ export function Component() {
               type="button"
               className="text-pink-700 bg-gray-100 hover:bg-gray-200 focus-visible:ring-2 focus:outline-none focus:ring-black font-medium rounded-lg text-lg px-10 py-3 text-center inline-flex items-center dark:focus:ring-black mr-4"
               onClick={() =>
-                feed._meta.subscribed
-                  ? r.mutate.unsubscribeFromFeed(feed.id)
-                  : r.mutate.subscribeToFeed(feed.id)
+                meta?.subscribed
+                  ? r.mutate.unsubscribeFromFeed(podcast.id)
+                  : r.mutate.subscribeToFeed(podcast.id)
               }
             >
               <svg
@@ -144,14 +157,14 @@ export function Component() {
                 <path d="M5 12h14" />
                 <path d="M12 5v14" />
               </svg>
-              {feed._meta.subscribed ? 'Unsubscribe' : 'Subscribe'}
+              {meta?.subscribed ? 'Unsubscribe' : 'Subscribe'}
             </button>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto max-w-screen-lg mb-10">
-        <EpisodeList podcastId={feedId} />
+        <EpisodeList feedId={feedId} />
       </div>
     </section>
   );

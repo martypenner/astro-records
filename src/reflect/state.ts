@@ -29,8 +29,8 @@ export async function listStaleFeeds(
 ): Promise<StoredFeed[]> {
   const feeds = (await listAllFeeds(tx)).filter((feed) => {
     return (
-      feed._meta.lastAccessedAt > Date.now() - TEN_DAYS &&
-      feed._meta.lastUpdatedAt < Date.now() - SIX_HOURS
+      feed.lastAccessedAt > Date.now() - TEN_DAYS &&
+      feed.lastUpdatedAt < Date.now() - SIX_HOURS
     );
   });
   return feeds;
@@ -43,7 +43,7 @@ export async function listStaleFeeds(
 export async function listOldFeeds(tx: ReadTransaction): Promise<StoredFeed[]> {
   const regularFeeds = await listAllFeeds(tx);
   const feeds = regularFeeds.filter((feed) => {
-    return feed._meta.lastAccessedAt < Date.now() - THIRTY_DAYS;
+    return feed.lastAccessedAt < Date.now() - THIRTY_DAYS;
   });
   return feeds;
 }
@@ -52,7 +52,7 @@ export async function listSubscribedFeeds(
   tx: ReadTransaction,
 ): Promise<Feed[]> {
   const feeds = await listAllFeeds(tx);
-  return feeds.filter((feed) => feed._meta.subscribed);
+  return feeds.filter((feed) => feed.subscribed);
 }
 
 export async function listEpisodesForFeed(

@@ -1,6 +1,5 @@
 import type { ApiEpisode, ApiFeed, Feed } from '@/data';
 import { env } from '@/env';
-import pRetry from 'p-retry';
 
 const {
   VITE_PODCAST_INDEX_API_KEY: apiKey,
@@ -40,40 +39,25 @@ const options = {
   },
 };
 
-const retryable =
-  <T, U>(fn: (...args: U[]) => Promise<T>) =>
-  (...args: U[]) =>
-    pRetry(async () => await fn(...args), {
-      onFailedAttempt: (error) => {
-        console.log(
-          `Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`,
-        );
-      },
-      retries: 3,
-      randomize: true,
-    });
+export const searchByTerm = async (query: string): Promise<Feed[]> => {
+  const url = new URL(baseUrl);
+  url.pathname = baseUrl.pathname.concat('/search/byterm');
+  const params = url.searchParams;
+  params.set('q', query);
+  url.search = params.toString();
+  const response = (await fetch(url, options).then((res) => res.json())) as {
+    status: string;
+    description: string;
+    feeds: Feed[];
+  };
+  if (response.status !== 'true') {
+    throw new Error(response.description);
+  }
 
-export const searchByTerm = retryable(
-  async (query: string): Promise<Feed[]> => {
-    const url = new URL(baseUrl);
-    url.pathname = baseUrl.pathname.concat('/search/byterm');
-    const params = url.searchParams;
-    params.set('q', query);
-    url.search = params.toString();
-    const response = (await fetch(url, options).then((res) => res.json())) as {
-      status: string;
-      description: string;
-      feeds: Feed[];
-    };
-    if (response.status !== 'true') {
-      throw new Error(response.description);
-    }
+  return response.feeds;
+};
 
-    return response.feeds;
-  },
-);
-
-export const trending = retryable(async (): Promise<Feed[]> => {
+export const trending = async (): Promise<Feed[]> => {
   const url = `${baseUrl}/podcasts/trending`;
   const response = (await fetch(url, options).then((res) => res.json())) as {
     status: string;
@@ -85,9 +69,9 @@ export const trending = retryable(async (): Promise<Feed[]> => {
   }
 
   return response.feeds as Feed[];
-});
+};
 
-export const podcastById = retryable(async (id: string): Promise<ApiFeed> => {
+export const podcastById = async (id: string): Promise<ApiFeed> => {
   const params = new URLSearchParams();
   params.set('id', id);
   params.set('fulltext', 'true');
@@ -107,47 +91,90 @@ export const podcastById = retryable(async (id: string): Promise<ApiFeed> => {
   }
 
   return data.feed as ApiFeed;
-});
+};
 
-export const episodesByPodcastId = retryable(
-  async (id: string): Promise<ApiEpisode[]> => {
-    const params = new URLSearchParams();
-    params.set('id', id);
-    params.set('fulltext', 'true');
-    const url = `${baseUrl}/episodes/byfeedid?${params.toString()}`;
-    const response = await fetch(url, options);
-    console.log(response);
-    if (response.status !== 200) {
-      throw response;
-    }
-    const data = (await response.json()) as {
-      status: string;
-      description: string;
-      items: ApiEpisode[];
-    };
-    if (data.status !== 'true') {
-      throw new Error(data.description);
-    }
-    console.log(data);
+export const episodeById = async (id: string): Promise<ApiEpisode> => {
+  const params = new URLSearchParams();
+  params.set('id', id);
+  params.set('fulltext', 'true');
+  const url = `${baseUrl}/episodes/byid?${params.toString()}`;
+  const response = await fetch(url, options);
+  console.log(response);
+  if (response.status !== 200) {
+    throw response;
+  }
+  const data = (await response.json()) as {
+    status: string;
+    description: string;
+    episode: ApiEpisode;
+  };
+  if (data.status !== 'true') {
+    throw new Error(data.description);
+  }
+  console.log(data);
+  const episode = data.episode;
 
-    return data.items.map((episode) => ({
-      id: episode.id,
-      feedId: id,
-      title: episode.title,
-      description: episode.description,
-      author: episode.author,
-      image:
-        episode.image?.trim().length === 0
+  return {
+    id: episode.id,
+    feedId: id,
+    title: episode.title,
+    description: episode.description,
+    author: episode.author,
+    image:
+      episode.image?.trim().length === 0
+        ? episode.feedImage
+        : episode.image == null
           ? episode.feedImage
-          : episode.image == null
-            ? episode.feedImage
-            : episode.image,
-      datePublished: episode.datePublished,
-      duration: episode.duration,
-      episode: episode.episode,
-      enclosureUrl: episode.enclosureUrl,
-      enclosureType: episode.enclosureType,
-      explicit: episode.explicit,
-    })) as ApiEpisode[];
-  },
-);
+          : episode.image,
+    // This is the number of SECONDS - not ms - since unix epoch, so we need to multiply by 1000
+    datePublished: Number(episode.datePublished) * 1000,
+    duration: episode.duration,
+    episode: episode.episode,
+    enclosureUrl: episode.enclosureUrl,
+    enclosureType: episode.enclosureType,
+    explicit: episode.explicit,
+  };
+};
+
+export const episodesByPodcastId = async (
+  id: string,
+): Promise<ApiEpisode[]> => {
+  const params = new URLSearchParams();
+  params.set('id', id);
+  params.set('fulltext', 'true');
+  const url = `${baseUrl}/episodes/byfeedid?${params.toString()}`;
+  const response = await fetch(url, options);
+  console.log(response);
+  if (response.status !== 200) {
+    throw response;
+  }
+  const data = (await response.json()) as {
+    status: string;
+    description: string;
+    items: ApiEpisode[];
+  };
+  if (data.status !== 'true') {
+    throw new Error(data.description);
+  }
+  console.log(data);
+
+  return data.items.map((episode) => ({
+    id: episode.id,
+    feedId: id,
+    title: episode.title,
+    description: episode.description,
+    author: episode.author,
+    image:
+      episode.image?.trim().length === 0
+        ? episode.feedImage
+        : episode.image == null
+          ? episode.feedImage
+          : episode.image,
+    datePublished: episode.datePublished,
+    duration: episode.duration,
+    episode: episode.episode,
+    enclosureUrl: episode.enclosureUrl,
+    enclosureType: episode.enclosureType,
+    explicit: episode.explicit,
+  })) as ApiEpisode[];
+};

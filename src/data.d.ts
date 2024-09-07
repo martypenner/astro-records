@@ -9,15 +9,13 @@ export interface ApiFeed {
   image: string;
 }
 
-export interface StoredFeed extends ApiFeed {
-  /** Our personal metadata. */
-  _meta: {
-    lastUpdatedAt: number;
-    lastAccessedAt: number;
-    fromSearch: boolean;
-    lastSubscribedAt: number;
-    subscribed: boolean;
-  };
+/** Our personal metadata. */
+export interface StoredFeed {
+  id: string;
+  lastUpdatedAt: number;
+  lastAccessedAt: number;
+  lastSubscribedAt?: number;
+  subscribed: boolean;
 
   /** Fallback */
   [key: string]: ReadonlyJSONValue;
@@ -33,8 +31,8 @@ export interface ApiEpisode {
   author: string;
   image?: string;
   feedImage?: string;
-  /** This is the number of SECONDS - not ms - since unix epoch. */
   datePublished: number;
+  /** Duration in seconds. I think. */
   duration: number;
   /** The episode number within the broader feed, e.g. 605. */
   episode: number;
@@ -44,17 +42,18 @@ export interface ApiEpisode {
 
   /** Fallback */
   // [key: string]: string | number | boolean | Date;
-  [key: string]: ReadonlyJSONValue;
+  [key: string]: ReadonlyJSONValue | undefined;
 }
 
-export interface StoredEpisode extends ApiEpisode {
-  durationFormatted: string;
-  explicit: boolean;
+export interface StoredEpisode {
+  id: string;
+  feedId: string;
   /** Progress of playing the episode. */
   currentTime: number;
-  lastPlayedAt?: number;
-  played: boolean;
+  lastPlayedAt: number;
   downloaded: boolean;
+  /** Fallback */
+  [key: string]: ReadonlyJSONValue;
 }
 
 export interface Episode extends StoredEpisode {

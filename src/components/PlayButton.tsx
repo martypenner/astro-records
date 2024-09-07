@@ -2,7 +2,11 @@ import { Episode } from '@/data';
 import { useStore } from '@nanostores/react';
 import { $isPlaying, playEpisode } from '../services/state';
 
-export default function PlayButton({ episode }: { episode: Episode }) {
+export default function PlayButton({
+  episode,
+}: {
+  episode: Pick<Episode, 'id' | 'feedId' | 'enclosureType'>;
+}) {
   const isPlaying = useStore($isPlaying);
 
   return (

@@ -26,7 +26,9 @@ export function pause() {
   $isPlaying.set(false);
 }
 
-export function playEpisode(episode: Episode) {
+export function playEpisode(
+  episode: Pick<Episode, 'id' | 'feedId' | 'enclosureType'>,
+) {
   if (episode.enclosureType.startsWith('video/')) {
     console.log('skipping video play for episode:', episode);
     return;

@@ -1,20 +1,36 @@
-import type { Episode, Feed } from '@/data';
+import type { ApiEpisode, Feed } from '@/data';
 import { r } from '@/reflect';
-import { useCurrentEpisode, useEpisodesForFeed } from '@/reflect/subscriptions';
+import { useCurrentEpisode } from '@/reflect/subscriptions';
+import { formatDuration } from '@/services/format-duration';
+import { episodesByPodcastId } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
+import { useQuery } from '@tanstack/react-query';
 import { ReactNode, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { $isPlaying } from '../services/state';
 import { DownloadEpisode } from './DownloadEpisode';
-import { Link } from 'react-router-dom';
 
 type Props = {
-  podcastId: Feed['id'];
+  feedId: Feed['id'];
 };
 
-export default function EpisodeList({ podcastId }: Props) {
+export default function EpisodeList({ feedId }: Props) {
   const currentEpisode = useCurrentEpisode(r);
   const isPlaying = useStore($isPlaying);
-  const episodes = useEpisodesForFeed(r, podcastId);
+
+  const {
+    isPending,
+    isError,
+    data: episodes,
+    error,
+  } = useQuery({
+    queryKey: ['podcast', 'episodes', feedId],
+    queryFn: async () => {
+      const episodes = await episodesByPodcastId(feedId);
+      await r.mutate.addEpisodesForFeed(episodes);
+      return episodes;
+    },
+  });
 
   const Wrapper = useMemo(() => {
     return ({
@@ -22,7 +38,7 @@ export default function EpisodeList({ podcastId }: Props) {
       isCurrentEpisode,
       children,
     }: {
-      episode: Episode;
+      episode: ApiEpisode;
       isCurrentEpisode: boolean;
       children: ReactNode;
     }) =>
@@ -33,14 +49,22 @@ export default function EpisodeList({ podcastId }: Props) {
         </div>
       ) : (
         <Link
-          to={`/podcast/${podcastId}/episode/${episode.id}`}
+          to={`/podcast/${feedId}/episode/${episode.id}`}
           className={`hover:bg-gray-200 ${isCurrentEpisode ? 'bg-pink-200' : ''} focus-visible:ring-2 focus:outline-none focus:ring-black cursor-pointer px-6 py-4 flex basis grow w-full items-center`}
           aria-current={isCurrentEpisode}
         >
           {children}
         </Link>
       );
-  }, [podcastId]);
+  }, [feedId]);
+
+  if (isPending) {
+    return <div>Loading...</div>;
+  }
+
+  if (isError) {
+    return <div>Error: {error.message}</div>;
+  }
 
   return (
     <ul className="text-xl" aria-label="Episode list">
@@ -64,7 +88,7 @@ export default function EpisodeList({ podcastId }: Props) {
                 </div>
                 <span className="sr-only"> - </span>
                 <span className="text-gray-500 ml-auto">
-                  {episode.durationFormatted}
+                  {formatDuration(episode.duration)}
                 </span>
 
                 <span className="sr-only">
