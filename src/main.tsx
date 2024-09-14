@@ -2,11 +2,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import { r } from './reflect';
-import { getEpisodeById, listOldFeeds, listStaleFeeds } from './reflect/state';
-import { episodesByPodcastId, podcastById } from './services/podcast-api';
-import { feedApiQueue } from './services/queue';
-import { apiThrottle } from './services/throttle';
+import { r } from '@/services/data';
+import {
+  getEpisodeById,
+  listOldFeeds,
+  listStaleFeeds,
+} from '@/services/data/state';
+import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
+import { feedApiQueue } from '@/services/queue';
+import { apiThrottle } from '@/services/throttle';
 import { persistQueryClient } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 

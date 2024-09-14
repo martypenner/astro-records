@@ -1,7 +1,7 @@
 import { Episode } from '@/data';
 import { env } from '@/env';
-import { r } from '@/reflect';
-import { useEpisodeById } from '@/reflect/subscriptions';
+import { r } from '@/data';
+import { useEpisodeById } from '@/services/data/subscriptions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CircleProgress } from './CircleProgress';
 

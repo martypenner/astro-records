@@ -1,8 +1,8 @@
 import EpisodeList from '@/components/EpisodeList';
 import PlayButton from '@/components/PlayButton';
-import { r } from '@/reflect';
-import { getFeed } from '@/reflect/state';
-import { useCurrentEpisode } from '@/reflect/subscriptions';
+import { r } from '@/data';
+import { getFeed } from '@/services/data/state';
+import { useCurrentEpisode } from '@/services/data/subscriptions';
 import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';

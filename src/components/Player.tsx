@@ -1,9 +1,12 @@
 import type { ApiEpisode } from '@/data';
-import { r } from '@/reflect';
-import { useCurrentEpisode, usePlayerSpeed } from '@/reflect/subscriptions';
-import { formatDuration } from '@/services/format-duration';
+import { r } from '@/data';
+import {
+  useCurrentEpisode,
+  usePlayerSpeed,
+} from '@/services/data/subscriptions';
+import { formatDuration } from '@/lib/format-duration';
 import { episodeById } from '@/services/podcast-api';
-import { $isPlaying, pause, togglePlaying } from '@/services/state';
+import { $isPlaying, pause, togglePlaying } from '@/services/ephemeral-state';
 import { debounce } from '@/utils';
 import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';

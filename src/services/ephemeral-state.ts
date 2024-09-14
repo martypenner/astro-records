@@ -1,6 +1,6 @@
 import { type Episode } from '@/data';
-import { r } from '@/reflect';
-import { getCurrentEpisode } from '@/reflect/state';
+import { r } from '@/services/data';
+import { getCurrentEpisode } from '@/services/data/state';
 import { atom } from 'nanostores';
 
 export const $isPlaying = atom(false);

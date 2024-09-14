@@ -1,6 +1,6 @@
 import type { ApiEpisode, Feed } from '@/data';
-import { r } from '@/reflect';
-import { useCurrentEpisode } from '@/reflect/subscriptions';
+import { r } from '@/data';
+import { useCurrentEpisode } from '@/services/data/subscriptions';
 import { formatDuration } from '@/lib/format-duration';
 import { episodesByPodcastId } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
