@@ -1,13 +1,13 @@
 import type { ApiEpisode, Feed } from '@/data';
 import { r } from '@/reflect';
 import { useCurrentEpisode } from '@/reflect/subscriptions';
-import { formatDuration } from '@/services/format-duration';
+import { formatDuration } from '@/lib/format-duration';
 import { episodesByPodcastId } from '@/services/podcast-api';
 import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';
 import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { $isPlaying } from '../services/state';
+import { $isPlaying } from '@/services/ephemeral-state';
 import { DownloadEpisode } from './DownloadEpisode';
 
 type Props = {

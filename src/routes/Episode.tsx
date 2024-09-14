@@ -14,7 +14,7 @@ import { apiThrottle } from '@/services/throttle';
 import { useStore } from '@nanostores/react';
 import { LoaderFunctionArgs, useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
-import { $isPlaying } from '../services/state';
+import { $isPlaying } from '@/services/ephemeral-state';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { feedId = '' } = params;

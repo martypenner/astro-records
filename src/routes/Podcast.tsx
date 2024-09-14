@@ -8,7 +8,7 @@ import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
-import { $isPlaying } from '../services/state';
+import { $isPlaying } from '@/services/ephemeral-state';
 
 export function Component() {
   const { feedId } = useParams();

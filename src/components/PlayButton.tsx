@@ -1,6 +1,6 @@
 import { Episode } from '@/data';
 import { useStore } from '@nanostores/react';
-import { $isPlaying, playEpisode } from '../services/state';
+import { $isPlaying, playEpisode } from '@/services/ephemeral-state';
 
 export default function PlayButton({
   episode,
