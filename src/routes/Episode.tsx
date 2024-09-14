@@ -1,42 +1,42 @@
 import PlayButton from '@/components/PlayButton';
 import { ApiFeed } from '@/data';
-import { r } from '@/data';
-import { getFeed, listEpisodesForFeed } from '@/services/data/state';
 import {
-  useCurrentEpisode,
-  useEpisodeForFeed,
-  useEpisodesForFeed,
-  useFeedById,
-} from '@/services/data/subscriptions';
+  addEpisodesForFeed,
+  addFeed,
+  getFeedById,
+  listEpisodesForFeed,
+  updateFeed,
+} from '@/services/data';
+import { $isPlaying } from '@/services/ephemeral-state';
 import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
 import { feedApiQueue } from '@/services/queue';
+import { useCurrentEpisode, useEpisodeForFeed } from '@/services/subscriptions';
 import { apiThrottle } from '@/services/throttle';
 import { useStore } from '@nanostores/react';
 import { LoaderFunctionArgs, useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
-import { $isPlaying } from '@/services/ephemeral-state';
 
 export async function loader({ params }: LoaderFunctionArgs) {
   const { feedId = '' } = params;
-  const feed = await r.query((tx) => getFeed(tx, feedId));
+  const feed = await getFeedById(feedId);
   if (feed == null) {
     const newFeed = (await feedApiQueue.add(
       apiThrottle(() => podcastById(feedId)),
     )) as ApiFeed;
-    r.mutate.addFeed(newFeed);
+    addFeed(newFeed);
   } else {
-    r.mutate.updateFeed({ id: feedId, lastAccessedAt: Date.now() });
+    updateFeed({ id: feedId, lastAccessedAt: Date.now() });
   }
 
   // Fetch new episodes that aren't in the cache yet.
-  const episodes = await r.query((tx) => listEpisodesForFeed(tx, feedId));
+  const episodes = await listEpisodesForFeed(feedId);
   if (episodes.length === 0) {
     try {
       feedApiQueue.add(
         apiThrottle(() =>
           // Don't await this; let the UI render right away
           episodesByPodcastId(feedId).then((episodes) =>
-            r.mutate.addEpisodesForFeed(episodes),
+            addEpisodesForFeed(episodes),
           ),
         ),
       );
@@ -52,7 +52,7 @@ export function Component() {
   const { episodeId } = useParams();
   invariant(episodeId, 'Episode id must be present');
 
-  const currentEpisode = useCurrentEpisode(r);
+  const currentEpisode = useCurrentEpisode();
   const isPlaying = useStore($isPlaying);
 
   const isPlayingCurrent = isPlaying && currentEpisode?.id === episodeId;
@@ -60,7 +60,7 @@ export function Component() {
     'absolute top-0 opacity-0 vynil-image vynil-animation-in' +
     (isPlayingCurrent ? '-spinning' : '');
 
-  const episode = useEpisodeForFeed(r, episodeId);
+  const episode = useEpisodeForFeed(episodeId);
 
   if (episode == null) {
     // TODO: throw error or show suspense instead, since the loader pre-loads missing feeds

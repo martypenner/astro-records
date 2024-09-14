@@ -1,16 +1,16 @@
 import { Episode } from '@/data';
 import { env } from '@/env';
-import { r } from '@/data';
-import { useEpisodeById } from '@/services/data/subscriptions';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CircleProgress } from './CircleProgress';
+import { useEpisodeById } from '@/services/subscriptions';
+import { updateEpisode } from '@/services/data';
 
 interface DownloadEpisodeProps {
   id: Episode['id'];
 }
 
 export function DownloadEpisode({ id }: DownloadEpisodeProps) {
-  const episode = useEpisodeById(r, id);
+  const episode = useEpisodeById(id);
   const [state, setState] = useState<'empty' | 'downloaded' | 'downloading'>(
     episode?.downloaded ? 'downloaded' : 'empty',
   );
@@ -69,7 +69,7 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
           const cache = await caches.open('podcast-episode-cache/v1');
           // Store by episode ID instead of enclosure URL since the URL might change.
           await cache.put(new Request('/episode/' + episode.id), response);
-          r.mutate.updateEpisode({
+          updateEpisode({
             id: episode.id,
             // Update the last played time so it doesn't expire right away.
             lastPlayedAt: Date.now(),
@@ -101,7 +101,7 @@ export function DownloadEpisode({ id }: DownloadEpisodeProps) {
       if (response) {
         await cache.delete(request);
       }
-      r.mutate.updateEpisode({
+      updateEpisode({
         id: episode.id,
         downloaded: false,
       });

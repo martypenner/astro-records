@@ -1,22 +1,23 @@
 import type { ApiEpisode } from '@/data';
-import { r } from '@/data';
-import {
-  useCurrentEpisode,
-  usePlayerSpeed,
-} from '@/services/data/subscriptions';
 import { formatDuration } from '@/lib/format-duration';
-import { episodeById } from '@/services/podcast-api';
+import {
+  addEpisodesForFeed,
+  getVolume,
+  setAudioVolume,
+  updateProgressForEpisode,
+} from '@/services/data';
 import { $isPlaying, pause, togglePlaying } from '@/services/ephemeral-state';
+import { episodeById } from '@/services/podcast-api';
+import { useCurrentEpisode, usePlayerSpeed } from '@/services/subscriptions';
 import { debounce } from '@/utils';
 import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
 import { Slider, SliderThumb, SliderTrack } from 'react-aria-components';
 import { NavLink } from 'react-router-dom';
 
 export default function PlayerGuard() {
-  const currentEpisode = useCurrentEpisode(r);
+  const currentEpisode = useCurrentEpisode();
 
   const {
     isPending,
@@ -29,7 +30,7 @@ export default function PlayerGuard() {
       if (currentEpisode == null) return null;
 
       const episode = await episodeById(currentEpisode.id);
-      await r.mutate.addEpisodesForFeed([episode]);
+      await addEpisodesForFeed([episode]);
       return episode;
     },
     enabled: currentEpisode != null,
@@ -125,7 +126,7 @@ type PlayerProps = Pick<
   'feedId' | 'author' | 'title' | 'image' | 'enclosureUrl' | 'duration'
 >;
 
-const initialVolume = Number((await r.query((tx) => tx.get('/volume'))) ?? 1);
+const initialVolume = await getVolume();
 
 function Player({
   feedId,
@@ -136,8 +137,8 @@ function Player({
   duration: episodeDuration,
 }: PlayerProps) {
   const isPlaying = useStore($isPlaying);
-  const currentEpisode = useCurrentEpisode(r);
-  const playerSpeed = usePlayerSpeed(r);
+  const currentEpisode = useCurrentEpisode();
+  const playerSpeed = usePlayerSpeed();
 
   const audioPlayer = useRef<HTMLAudioElement>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
@@ -224,7 +225,7 @@ function Player({
       if (audio.duration - audio.currentTime <= 10) {
         // Only update once at the end
         if (currentEpisode.progress !== 100) {
-          r.mutate.updateProgressForEpisode({
+          updateProgressForEpisode({
             id: currentEpisode.id,
             progress: 100,
           });
@@ -233,7 +234,7 @@ function Player({
         // Persist regular time updates even less frequently
         if (now - lastUpdatedPersistedTime >= persistedUpdateInterval) {
           lastUpdatedPersistedTime = Date.now();
-          r.mutate.updateProgressForEpisode({
+          updateProgressForEpisode({
             id: currentEpisode.id,
             progress: currentTime,
           });
@@ -246,7 +247,7 @@ function Player({
 
       pause();
       setCurrentTime(0);
-      r.mutate.updateProgressForEpisode({
+      updateProgressForEpisode({
         id: currentEpisode.id,
         progress: 100,
       });
@@ -520,5 +521,5 @@ function Player({
 }
 
 const updateVolume = debounce((volume: number) => {
-  r.mutate.setAudioVolume(volume);
+  setAudioVolume(volume);
 }, 300);

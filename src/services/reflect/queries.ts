@@ -55,6 +55,14 @@ export async function listSubscribedFeeds(
   return feeds.filter((feed) => feed.subscribed);
 }
 
+export async function getFeedById(
+  tx: ReadTransaction,
+  id: Feed['id'],
+): Promise<Feed | null> {
+  const feed = (await tx.get(`feed/${id}`)) as unknown as Feed;
+  return feed;
+}
+
 export async function listEpisodesForFeed(
   tx: ReadTransaction,
   feedId: Feed['id'],
@@ -88,4 +96,8 @@ export async function getEpisodeById(
 
 export async function getPlayerSpeed(tx: ReadTransaction): Promise<number> {
   return ((await tx.get('/player-speed')) ?? 1) as number;
+}
+
+export async function getVolume(tx: ReadTransaction): Promise<number> {
+  return ((await tx.get('/volume')) ?? 1) as number;
 }

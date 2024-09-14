@@ -26,7 +26,7 @@ import {
   mustGetFeed,
   setFeed,
   updateFeed,
-} from './state';
+} from './queries';
 
 export const mutators = {
   addFeed,

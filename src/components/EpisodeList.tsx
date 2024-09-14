@@ -1,13 +1,13 @@
 import type { ApiEpisode, Feed } from '@/data';
-import { r } from '@/data';
-import { useCurrentEpisode } from '@/services/data/subscriptions';
 import { formatDuration } from '@/lib/format-duration';
+import { addEpisodesForFeed } from '@/services/data';
+import { $isPlaying } from '@/services/ephemeral-state';
 import { episodesByPodcastId } from '@/services/podcast-api';
+import { useCurrentEpisode } from '@/services/subscriptions';
 import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';
 import { ReactNode, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { $isPlaying } from '@/services/ephemeral-state';
 import { DownloadEpisode } from './DownloadEpisode';
 
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
 };
 
 export default function EpisodeList({ feedId }: Props) {
-  const currentEpisode = useCurrentEpisode(r);
+  const currentEpisode = useCurrentEpisode();
   const isPlaying = useStore($isPlaying);
 
   const {
@@ -27,7 +27,7 @@ export default function EpisodeList({ feedId }: Props) {
     queryKey: ['podcast', 'episodes', feedId],
     queryFn: async () => {
       const episodes = await episodesByPodcastId(feedId);
-      await r.mutate.addEpisodesForFeed(episodes);
+      await addEpisodesForFeed(episodes);
       return episodes;
     },
   });

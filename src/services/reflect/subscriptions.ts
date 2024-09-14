@@ -20,7 +20,7 @@ import {
   getPlayerSpeed,
   listAllFeeds,
   listEpisodesForFeed,
-} from './state';
+} from './queries';
 
 export function useFeeds(reflect: Reflect<Mutators>): Feed[] {
   return useSubscribe(reflect, listAllFeeds, []);

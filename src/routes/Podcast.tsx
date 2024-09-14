@@ -1,20 +1,26 @@
 import EpisodeList from '@/components/EpisodeList';
 import PlayButton from '@/components/PlayButton';
-import { r } from '@/data';
-import { getFeed } from '@/services/data/state';
-import { useCurrentEpisode } from '@/services/data/subscriptions';
+import {
+  addEpisodesForFeed,
+  addFeed,
+  getFeedById,
+  subscribeToFeed,
+  unsubscribeFromFeed,
+  updateFeed,
+} from '@/services/data';
+import { $isPlaying } from '@/services/ephemeral-state';
 import { episodesByPodcastId, podcastById } from '@/services/podcast-api';
+import { useCurrentEpisode } from '@/services/subscriptions';
 import { useStore } from '@nanostores/react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import invariant from 'ts-invariant';
-import { $isPlaying } from '@/services/ephemeral-state';
 
 export function Component() {
   const { feedId } = useParams();
   invariant(feedId, 'Id must be present');
 
-  const currentEpisode = useCurrentEpisode(r);
+  const currentEpisode = useCurrentEpisode();
   const isPlaying = useStore($isPlaying);
 
   const isPlayingCurrent = isPlaying && currentEpisode?.id === feedId;
@@ -27,13 +33,13 @@ export function Component() {
     queryFn: async () => {
       const [podcast, meta] = await Promise.all([
         podcastById(feedId),
-        r.query((tx) => getFeed(tx, feedId)),
+        getFeedById(feedId),
       ]);
       const now = Date.now();
       if (!meta) {
-        await r.mutate.addFeed(podcast);
+        await addFeed(podcast);
       } else {
-        await r.mutate.updateFeed({
+        await updateFeed({
           id: feedId,
           lastAccessedAt: now,
         });
@@ -49,7 +55,7 @@ export function Component() {
     queryKey: ['podcast', 'episodes', feedId],
     queryFn: async () => {
       const episodes = await episodesByPodcastId(feedId);
-      await r.mutate.addEpisodesForFeed(episodes);
+      await addEpisodesForFeed(episodes);
       return episodes;
     },
   });
@@ -138,8 +144,8 @@ export function Component() {
               className="text-pink-700 bg-gray-100 hover:bg-gray-200 focus-visible:ring-2 focus:outline-none focus:ring-black font-medium rounded-lg text-lg px-10 py-3 text-center inline-flex items-center dark:focus:ring-black mr-4"
               onClick={() =>
                 meta?.subscribed
-                  ? r.mutate.unsubscribeFromFeed(podcast.id)
-                  : r.mutate.subscribeToFeed(podcast.id)
+                  ? unsubscribeFromFeed(feedId)
+                  : subscribeToFeed(feedId)
               }
             >
               <svg
